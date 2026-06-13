@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -43,7 +43,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   styleUrl: './login.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly progress = inject(WatchProgressService);
   private readonly messages = inject(MessageService);
@@ -52,6 +52,7 @@ export class LoginComponent {
 
   readonly mode = signal<'login' | 'register'>('login');
   readonly loading = signal(false);
+  readonly registrationEnabled = signal(true);
 
   readonly form = this.fb.nonNullable.group(
     {
@@ -64,7 +65,15 @@ export class LoginComponent {
     { validators: passwordsMatch },
   );
 
+  ngOnInit(): void {
+    void this.loadAuthConfig();
+  }
+
   setMode(mode: 'login' | 'register'): void {
+    if (mode === 'register' && !this.registrationEnabled()) {
+      return;
+    }
+
     this.mode.set(mode);
 
     const username = this.form.controls.username;
@@ -103,6 +112,10 @@ export class LoginComponent {
 
     try {
       if (this.mode() === 'register') {
+        if (!this.registrationEnabled()) {
+          throw new Error('Registration is disabled');
+        }
+
         await this.auth.register({
           email,
           username: username || email.split('@')[0],
@@ -152,5 +165,17 @@ export class LoginComponent {
     }
 
     return null;
+  }
+
+  private async loadAuthConfig(): Promise<void> {
+    try {
+      const config = await this.auth.getAuthConfig();
+      this.registrationEnabled.set(config.public_registration);
+      if (!config.public_registration && this.mode() === 'register') {
+        this.setMode('login');
+      }
+    } catch {
+      this.registrationEnabled.set(true);
+    }
   }
 }

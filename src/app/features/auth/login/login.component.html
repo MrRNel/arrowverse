@@ -16,20 +16,22 @@
       </div>
     </header>
 
-    <div class="auth-tabs">
-      <p-button
-        label="Sign in"
-        [outlined]="mode() !== 'login'"
-        styleClass="auth-tab-btn"
-        (onClick)="setMode('login')"
-      />
-      <p-button
-        label="Register"
-        [outlined]="mode() !== 'register'"
-        styleClass="auth-tab-btn"
-        (onClick)="setMode('register')"
-      />
-    </div>
+    @if (registrationEnabled()) {
+      <div class="auth-tabs">
+        <p-button
+          label="Sign in"
+          [outlined]="mode() !== 'login'"
+          styleClass="auth-tab-btn"
+          (onClick)="setMode('login')"
+        />
+        <p-button
+          label="Register"
+          [outlined]="mode() !== 'register'"
+          styleClass="auth-tab-btn"
+          (onClick)="setMode('register')"
+        />
+      </div>
+    }
 
     <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
       @if (mode() === 'register') {

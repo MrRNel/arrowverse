@@ -6,8 +6,51 @@ from app.routers import auth, progress
 from fastapi import FastAPI, Request
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+
+_PROBE_EXTENSIONS = (
+    ".php",
+    ".bak",
+    ".old",
+    ".dist",
+    ".backup",
+    ".sql",
+    ".yaml",
+    ".yml",
+    ".json",
+    ".xml",
+    ".env",
+    ".log",
+    ".inc",
+    ".swp",
+    ".git",
+    ".credentials",
+    ".pgpass",
+    ".npmrc",
+    ".pypirc",
+)
+_PROBE_SEGMENTS = (
+    "wp-config",
+    "wp-admin",
+    "wp-login",
+    "phpmyadmin",
+    "/.git",
+    "/.aws",
+    "/.vscode",
+    "/.env",
+    "/.claude",
+    "bootstrap/cache",
+)
+
+
+def _is_probe_path(path: str) -> bool:
+    lower = path.lower()
+    if "/." in lower or lower.startswith("/."):
+        return True
+    if any(lower.endswith(ext) for ext in _PROBE_EXTENSIONS):
+        return True
+    return any(segment in lower for segment in _PROBE_SEGMENTS)
 
 
 def create_app() -> FastAPI:
@@ -45,13 +88,14 @@ def create_app() -> FastAPI:
             return FileResponse(dist_path / "index.html")
 
         @app.exception_handler(404)
-        async def spa_fallback(request: Request, exc: HTTPException) -> FileResponse:
-            if request.url.path.startswith("/api"):
-                raise exc
+        async def spa_fallback(request: Request, exc: HTTPException) -> FileResponse | JSONResponse:
+            path = request.url.path
+            if path.startswith("/api") or _is_probe_path(path):
+                return JSONResponse({"detail": "Not Found"}, status_code=404)
             index = dist_path / "index.html"
             if index.exists():
                 return FileResponse(index)
-            raise exc
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
 
         app.mount("/", StaticFiles(directory=dist_path, html=True), name="spa")
 

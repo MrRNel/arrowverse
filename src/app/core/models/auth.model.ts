@@ -20,6 +20,10 @@ export interface AuthSessionState {
   user: AuthUser | null;
 }
 
+export interface AuthConfig {
+  public_registration: boolean;
+}
+
 export interface ExtensionAuthMessage {
   source: 'arrowverse-app';
   type: 'AUTH_STATE';

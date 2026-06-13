@@ -3,6 +3,7 @@ from app.config import get_settings
 from app.database import get_db
 from app.models.user import User
 from app.schemas.auth import (
+    AuthConfigResponse,
     AuthorizationCodeResponse,
     ExtensionLinkRequest,
     ExtensionLinkResponse,
@@ -26,6 +27,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
+
+
+@router.get("/config", response_model=AuthConfigResponse)
+async def auth_config() -> AuthConfigResponse:
+    return AuthConfigResponse(public_registration=settings.public_registration)
 
 
 @router.post("/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED)

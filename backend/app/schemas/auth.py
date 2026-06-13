@@ -65,4 +65,8 @@ class SessionResponse(BaseModel):
     user: UserPublic
 
 
+class AuthConfigResponse(BaseModel):
+    public_registration: bool
+
+
 TokenResponse.model_rebuild()

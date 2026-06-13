@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { AuthSessionState, AuthUser, TokenResponse } from '../models/auth.model';
+import { AuthSessionState, AuthConfig, AuthUser, TokenResponse } from '../models/auth.model';
 import { createPkcePair } from '../utils/pkce.utils';
 
 const REFRESH_STORAGE_KEY = 'arrowverse.refreshToken';
@@ -35,6 +35,10 @@ export class AuthService {
       this.initPromise = this.restoreSession();
     }
     return this.initPromise;
+  }
+
+  getAuthConfig(): Promise<AuthConfig> {
+    return firstValueFrom(this.http.get<AuthConfig>(`${environment.apiUrl}/auth/config`));
   }
 
   private async restoreSession(): Promise<void> {
