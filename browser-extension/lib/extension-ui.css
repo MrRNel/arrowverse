@@ -140,16 +140,13 @@ h1,
 }
 
 .av-logo {
-  align-items: center;
-  background: linear-gradient(135deg, #22d3ee, #8b5cf6);
   border-radius: 0.85rem;
-  color: #020617;
-  display: flex;
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(0, 212, 255, 0.12);
   flex-shrink: 0;
-  font-size: 0.95rem;
-  font-weight: 800;
   height: 2.75rem;
-  justify-content: center;
+  object-fit: cover;
   width: 2.75rem;
 }
 

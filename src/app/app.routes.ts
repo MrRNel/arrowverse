@@ -6,6 +6,7 @@ import { HeroCodexComponent } from './features/gamification/hero-codex/hero-code
 import { SeasonDetailComponent } from './features/series/season-detail/season-detail.component';
 import { SeriesDetailComponent } from './features/series/series-detail/series-detail.component';
 import { SeriesListComponent } from './features/series/series-list/series-list.component';
+import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { WatchOrderComponent } from './features/watch-order/watch-order.component';
 import { ShellComponent } from './layout/shell/shell.component';
 
@@ -20,7 +21,8 @@ export const routes: Routes = [
     component: ShellComponent,
     canActivate: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'watch-order' },
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      { path: 'dashboard', component: DashboardComponent },
       { path: 'watch-order', component: WatchOrderComponent },
       { path: 'hero-codex', component: HeroCodexComponent },
       { path: 'series', component: SeriesListComponent },
@@ -28,5 +30,5 @@ export const routes: Routes = [
       { path: 'series/:showId/season/:season', component: SeasonDetailComponent },
     ],
   },
-  { path: '**', redirectTo: 'watch-order' },
+  { path: '**', redirectTo: 'dashboard' },
 ];

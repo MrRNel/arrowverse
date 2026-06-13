@@ -2,7 +2,13 @@
   <p-toast position="top-right" />
   <aside class="shell__sidebar">
     <div class="shell__brand">
-      <div class="shell__brand-mark">AV</div>
+      <img
+        class="shell__brand-icon"
+        src="/icon.svg"
+        alt="Arrowverse Tracker"
+        width="45"
+        height="45"
+      />
       <div>
         <div class="shell__brand-title">Arrowverse</div>
         <div class="shell__brand-subtitle">Watch Tracker</div>
@@ -63,6 +69,18 @@
       } @else if (extensionLastEvent()) {
         <div class="shell__extension-event">{{ extensionLastEvent() }}</div>
       }
+
+      <label class="shell__playback-label">
+        Jellyfin server URL
+        <input
+          type="url"
+          class="shell__playback-input"
+          [ngModel]="playbackPreferences.jellyfinUrl()"
+          (ngModelChange)="updateJellyfinUrl($event)"
+          placeholder="http://localhost:8096"
+        />
+      </label>
+      <p class="shell__playback-hint">Used for Play on Jellyfin links in the app.</p>
     </div>
 
     <div class="shell__footer">

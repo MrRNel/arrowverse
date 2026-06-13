@@ -172,6 +172,39 @@
   text-transform: uppercase;
 }
 
+.episode-row__play {
+  align-items: center;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.28);
+  border-radius: 999px;
+  color: var(--av-accent);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.episode-row__play:hover {
+  background: rgba(0, 212, 255, 0.16);
+  border-color: rgba(0, 212, 255, 0.42);
+}
+
+:host ::ng-deep .episode-source-select {
+  min-width: 8.5rem;
+}
+
+:host ::ng-deep .episode-source-select .p-select-label {
+  font-size: 0.72rem;
+  padding: 0.35rem 0.55rem;
+}
+
 /* PrimeNG SelectButton — styleClass lands on each p-togglebutton (see primeng.org/selectbutton) */
 :host ::ng-deep .episode-row__actions .p-selectbutton {
   background: rgba(6, 11, 20, 0.72);

@@ -1,18 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
-import { CrossoverCardComponent } from '../gamification/crossover-card/crossover-card.component';
-import { HeroBannerComponent } from '../gamification/hero-banner/hero-banner.component';
-import { EpisodeDashboardComponent } from './episode-dashboard/episode-dashboard.component';
 import { EpisodeListComponent } from '../../shared/episode-list/episode-list.component';
 
 @Component({
   selector: 'app-watch-order',
-  imports: [
-    HeroBannerComponent,
-    CrossoverCardComponent,
-    EpisodeDashboardComponent,
-    EpisodeListComponent,
-  ],
+  imports: [RouterLink, EpisodeListComponent],
   template: `
     <div class="page">
       <header class="page__header">
@@ -20,14 +13,12 @@ import { EpisodeListComponent } from '../../shared/episode-list/episode-list.com
           <p class="page__eyebrow">Multiverse continuity mission</p>
           <h1>Watch Order</h1>
           <p class="page__subtitle">
-            Earn XP, protect the timeline, and survive every Crisis in crossover-aware order.
+            The full crossover timeline — mark episodes unwatched, in progress, or finished.
+            <a routerLink="/dashboard">Back to dashboard</a>
           </p>
         </div>
       </header>
 
-      <app-hero-banner />
-      <app-crossover-card />
-      <app-episode-dashboard />
       <app-episode-list title="Complete Watch Order" />
     </div>
   `,

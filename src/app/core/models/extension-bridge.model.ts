@@ -13,6 +13,8 @@ export interface ExtensionEpisodePayload {
   episode_id: string;
   episode_name: string;
   air_date?: string;
+  provider?: 'jellyfin' | 'netflix';
+  play_item_id?: string | null;
 }
 
 export interface ExtensionBridgeMessage {

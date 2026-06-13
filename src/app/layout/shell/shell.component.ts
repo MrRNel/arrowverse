@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { MenuModule } from 'primeng/menu';
@@ -8,11 +9,12 @@ import { ToastModule } from 'primeng/toast';
 import { AuthService } from '../../core/services/auth.service';
 import { ExtensionBridgeService } from '../../core/services/extension-bridge.service';
 import { GamificationService } from '../../core/services/gamification.service';
+import { PlaybackPreferencesService } from '../../core/services/playback-preferences.service';
 import { WatchProgressService } from '../../core/services/watch-progress.service';
 
 @Component({
   selector: 'app-shell',
-  imports: [DecimalPipe, RouterOutlet, MenuModule, ToastModule],
+  imports: [DecimalPipe, FormsModule, RouterOutlet, MenuModule, ToastModule],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -22,6 +24,7 @@ export class ShellComponent {
   private readonly extensionBridge = inject(ExtensionBridgeService);
   private readonly auth = inject(AuthService);
   readonly gamification = inject(GamificationService);
+  readonly playbackPreferences = inject(PlaybackPreferencesService);
   readonly profile = this.gamification.profile;
   readonly user = this.auth.user;
   readonly extensionConnected = this.extensionBridge.connected;
@@ -32,6 +35,11 @@ export class ShellComponent {
     {
       label: 'Navigation',
       items: [
+        {
+          label: 'Dashboard',
+          icon: 'pi pi-home',
+          routerLink: ['/dashboard'],
+        },
         {
           label: 'Watch Order',
           icon: 'pi pi-list',
@@ -59,5 +67,9 @@ export class ShellComponent {
   logout(): void {
     sessionStorage.removeItem('arrowverse.extensionLinked');
     this.auth.logout();
+  }
+
+  updateJellyfinUrl(value: string): void {
+    this.playbackPreferences.setJellyfinUrl(value);
   }
 }

@@ -18,6 +18,14 @@ function resetState() {
   jellyfin.setLastSession(null);
 }
 
+function enrichEpisode(episode, provider, playItemId = null) {
+  return {
+    ...episode,
+    provider,
+    play_item_id: playItemId,
+  };
+}
+
 async function completeEpisodeOnStop({
   sendRuntimeMessage,
   isExtensionDead,
@@ -33,7 +41,7 @@ async function completeEpisodeOnStop({
     completedEpisodeKey = startedEpisodeKey;
     await sendRuntimeMessage({
       type: 'EPISODE_COMPLETED',
-      payload: lastMatchedEpisode,
+      payload: enrichEpisode(lastMatchedEpisode, 'jellyfin', currentItemId),
       reason,
     });
     return !isExtensionDead();
@@ -42,7 +50,7 @@ async function completeEpisodeOnStop({
   if (lastKnownProgress >= PARTIAL_MIN) {
     await sendRuntimeMessage({
       type: 'EPISODE_PARTIAL',
-      payload: lastMatchedEpisode,
+      payload: enrichEpisode(lastMatchedEpisode, 'jellyfin', currentItemId),
       progress: lastKnownProgress,
       reason,
     });
@@ -130,9 +138,20 @@ shared.createMonitor({
 
     const itemId = session.NowPlayingItem.Id;
     if (itemId !== currentItemId) {
+      if (currentItemId !== null && lastMatchedEpisode) {
+        await completeEpisodeOnStop({
+          sendRuntimeMessage,
+          isExtensionDead,
+          reason: 'item-changed',
+          COMPLETION_THRESHOLD,
+          PARTIAL_MIN: 0.15,
+        });
+      }
+
       currentItemId = itemId;
       startedEpisodeKey = null;
       completedEpisodeKey = null;
+      lastKnownProgress = 0;
       globalThis.__arrowverseLastSyncWarningKey = null;
     }
 
@@ -164,10 +183,11 @@ shared.createMonitor({
     if (startedEpisodeKey !== episodeKey) {
       startedEpisodeKey = episodeKey;
       completedEpisodeKey = null;
+      lastKnownProgress = Math.max(lastKnownProgress, playbackProgress(session).progress);
 
       const started = await sendRuntimeMessage({
         type: 'EPISODE_STARTED',
-        payload: episode,
+        payload: enrichEpisode(episode, 'jellyfin', metadata.itemId),
       });
 
       if (!started && isExtensionDead()) {
@@ -194,7 +214,7 @@ shared.createMonitor({
       completedEpisodeKey = episodeKey;
       await sendRuntimeMessage({
         type: 'EPISODE_COMPLETED',
-        payload: episode,
+        payload: enrichEpisode(episode, 'jellyfin', metadata.itemId),
       });
     }
   },

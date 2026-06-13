@@ -8,6 +8,14 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.dashboard--with-partial:not(.dashboard--no-next) {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.dashboard--no-next.dashboard--with-partial {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 :host ::ng-deep .stat-card {
   background: var(--av-surface);
   border: 1px solid var(--av-border);
@@ -51,6 +59,10 @@
   color: #a78bfa;
 }
 
+.stat-card--partial .stat-card__value {
+  color: #fbbf24;
+}
+
 :host ::ng-deep .dashboard-progress {
   margin-top: 0.75rem;
 }
@@ -88,7 +100,8 @@
 }
 
 @media (max-width: 1200px) {
-  .dashboard {
+  .dashboard,
+  .dashboard--with-partial:not(.dashboard--no-next) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

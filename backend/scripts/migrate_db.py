@@ -28,6 +28,20 @@ MIGRATIONS: list[tuple[str, str, str]] = [
         ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'watched' AFTER source
         """,
     ),
+    (
+        'watched_episodes.play_item_id',
+        """
+        SELECT COUNT(*) AS cnt
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'watched_episodes'
+          AND COLUMN_NAME = 'play_item_id'
+        """,
+        """
+        ALTER TABLE watched_episodes
+        ADD COLUMN play_item_id VARCHAR(64) NULL AFTER source
+        """,
+    ),
 ]
 
 

@@ -22,6 +22,7 @@ def _split_progress_rows(rows: list[WatchedEpisode]) -> ProgressResponse:
             row_number=row.row_number,
             watched_at=row.watched_at,
             source=row.source,
+            play_item_id=row.play_item_id,
             status=row.status if row.status in ('partial', 'watched') else 'watched',
         )
         for row in rows
@@ -67,12 +68,15 @@ async def set_progress(
                     user_id=user.id,
                     row_number=row_number,
                     source=payload.source,
+                    play_item_id=payload.play_item_id,
                     status=status_value,
                 )
             )
         else:
             existing.status = status_value
             existing.source = payload.source
+            if payload.play_item_id is not None:
+                existing.play_item_id = payload.play_item_id
 
     await db.commit()
     return await get_progress(db, user)
@@ -93,12 +97,15 @@ async def bulk_set_progress(db: AsyncSession, user: User, payload: BulkProgressR
                     user_id=user.id,
                     row_number=row_number,
                     source=payload.source,
+                    play_item_id=payload.play_item_id,
                     status='watched',
                 )
             )
         else:
             existing.status = 'watched'
             existing.source = payload.source
+            if payload.play_item_id is not None:
+                existing.play_item_id = payload.play_item_id
 
     await db.commit()
     return await get_progress(db, user)

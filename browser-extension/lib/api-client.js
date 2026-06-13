@@ -77,7 +77,11 @@ export async function setEpisodeStatusOnApi(config, episode, status) {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    body: JSON.stringify({ status, source: 'extension' }),
+    body: JSON.stringify({
+      status,
+      source: episode.provider ?? 'extension',
+      play_item_id: episode.play_item_id ?? null,
+    }),
   });
 
   if (response.status === 401) {

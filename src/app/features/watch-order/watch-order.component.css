@@ -27,4 +27,5 @@
 
 .page__subtitle a {
   color: var(--av-accent);
+  margin-left: 0.35rem;
 }

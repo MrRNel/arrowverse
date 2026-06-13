@@ -227,6 +227,10 @@ function buildLocalSyncWarning(episode, syncState) {
     return null;
   }
 
+  if (episode.row_number === syncState.upNext.row_number + 1) {
+    return null;
+  }
+
   return {
     playing: episode,
     upNext: syncState.upNext,

@@ -3,18 +3,33 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { normalizeWatchSource, WatchSource } from '../models/playback.model';
 import { AuthService } from './auth.service';
 
 export type EpisodeWatchStatus = 'unwatched' | 'partial' | 'watched';
 
+interface WatchedEpisodeRecord {
+  row_number: number;
+  source: string;
+  play_item_id?: string | null;
+  status: EpisodeWatchStatus;
+}
+
 interface ProgressResponse {
   watched_rows: number[];
   partial_rows: number[];
+  watched: WatchedEpisodeRecord[];
 }
 
 interface ProgressUpdatePayload {
   status: EpisodeWatchStatus;
-  source?: 'manual' | 'extension';
+  source?: WatchSource;
+  play_item_id?: string | null;
+}
+
+export interface EpisodeProgressMeta {
+  source: WatchSource;
+  playItemId: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -27,6 +42,7 @@ export class WatchProgressService {
   readonly isReady = this.ready.asReadonly();
   private readonly watchedRows = signal<ReadonlySet<number>>(new Set());
   private readonly partialRows = signal<ReadonlySet<number>>(new Set());
+  private readonly episodeMeta = signal<ReadonlyMap<number, EpisodeProgressMeta>>(new Map());
 
   readonly watched = this.watchedRows.asReadonly();
   readonly partial = this.partialRows.asReadonly();
@@ -48,6 +64,7 @@ export class WatchProgressService {
     if (!this.auth.isAuthenticated()) {
       this.watchedRows.set(new Set());
       this.partialRows.set(new Set());
+      this.episodeMeta.set(new Map());
       this.ready.set(true);
       return;
     }
@@ -75,6 +92,14 @@ export class WatchProgressService {
     return 'unwatched';
   }
 
+  getSource(rowNumber: number): WatchSource {
+    return this.episodeMeta().get(rowNumber)?.source ?? 'manual';
+  }
+
+  getPlayItemId(rowNumber: number): string | null {
+    return this.episodeMeta().get(rowNumber)?.playItemId ?? null;
+  }
+
   isWatched(rowNumber: number): boolean {
     return this.watchedRows().has(rowNumber);
   }
@@ -90,11 +115,20 @@ export class WatchProgressService {
   async setStatus(
     rowNumber: number,
     status: EpisodeWatchStatus,
-    source: 'manual' | 'extension' = 'manual',
+    source?: WatchSource,
+    playItemId?: string | null,
   ): Promise<void> {
     await this.init();
 
-    const payload: ProgressUpdatePayload = { status, source };
+    const payload: ProgressUpdatePayload = {
+      status,
+      source: source ?? this.getSource(rowNumber),
+    };
+
+    if (playItemId !== undefined) {
+      payload.play_item_id = playItemId;
+    }
+
     const response = await firstValueFrom(
       this.http.put<ProgressResponse>(`${environment.apiUrl}/progress/${rowNumber}`, payload),
     );
@@ -102,21 +136,40 @@ export class WatchProgressService {
     this.applyResponse(response);
   }
 
-  async setWatched(rowNumber: number, watched: boolean, source: 'manual' | 'extension' = 'manual'): Promise<void> {
-    await this.setStatus(rowNumber, watched ? 'watched' : 'unwatched', source);
+  async setSource(rowNumber: number, source: WatchSource): Promise<void> {
+    const status = this.getStatus(rowNumber);
+    if (status === 'unwatched') {
+      return;
+    }
+
+    await this.setStatus(rowNumber, status, source);
+  }
+
+  async setWatched(
+    rowNumber: number,
+    watched: boolean,
+    source: WatchSource = 'manual',
+    playItemId?: string | null,
+  ): Promise<void> {
+    await this.setStatus(rowNumber, watched ? 'watched' : 'unwatched', source, playItemId);
   }
 
   async toggleWatched(rowNumber: number): Promise<void> {
     await this.setStatus(rowNumber, this.isWatched(rowNumber) ? 'unwatched' : 'watched', 'manual');
   }
 
-  async bulkMark(rowNumbers: number[], source: 'manual' | 'extension' = 'extension'): Promise<void> {
+  async bulkMark(
+    rowNumbers: number[],
+    source: WatchSource = 'extension',
+    playItemId?: string | null,
+  ): Promise<void> {
     await this.init();
 
     const response = await firstValueFrom(
       this.http.post<ProgressResponse>(`${environment.apiUrl}/progress/bulk`, {
         row_numbers: rowNumbers,
         source,
+        play_item_id: playItemId ?? null,
       }),
     );
 
@@ -126,5 +179,14 @@ export class WatchProgressService {
   private applyResponse(response: ProgressResponse): void {
     this.watchedRows.set(new Set(response.watched_rows ?? []));
     this.partialRows.set(new Set(response.partial_rows ?? []));
+
+    const meta = new Map<number, EpisodeProgressMeta>();
+    for (const record of response.watched ?? []) {
+      meta.set(record.row_number, {
+        source: normalizeWatchSource(record.source),
+        playItemId: record.play_item_id ?? null,
+      });
+    }
+    this.episodeMeta.set(meta);
   }
 }

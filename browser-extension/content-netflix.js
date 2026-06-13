@@ -21,6 +21,24 @@ function resetState() {
   globalThis.__arrowverseLastSyncWarningKey = null;
 }
 
+function enrichEpisode(episode, provider, playItemId = null) {
+  return {
+    ...episode,
+    provider,
+    play_item_id: playItemId,
+  };
+}
+
+function netflixPlayItemId() {
+  const player = document.querySelector('[data-uia="player"][data-videoid]');
+  if (player?.dataset?.videoid) {
+    return player.dataset.videoid;
+  }
+
+  const match = window.location.href.match(/\/watch\/(\d+)/);
+  return match?.[1] ?? null;
+}
+
 async function completeEpisodeOnStop({
   sendRuntimeMessage,
   isExtensionDead,
@@ -37,7 +55,7 @@ async function completeEpisodeOnStop({
   completedEpisodeKey = startedEpisodeKey;
   await sendRuntimeMessage({
     type: 'EPISODE_COMPLETED',
-    payload: lastMatchedEpisode,
+    payload: enrichEpisode(lastMatchedEpisode, 'netflix', netflixPlayItemId()),
   });
 
   if (isExtensionDead()) {
@@ -318,7 +336,7 @@ shared.createMonitor({
 
       const started = await sendRuntimeMessage({
         type: 'EPISODE_STARTED',
-        payload: episode,
+        payload: enrichEpisode(episode, 'netflix', netflixPlayItemId()),
       });
 
       if (!started && isExtensionDead()) {
@@ -350,7 +368,7 @@ shared.createMonitor({
       completedEpisodeKey = episodeKey;
       await sendRuntimeMessage({
         type: 'EPISODE_COMPLETED',
-        payload: episode,
+        payload: enrichEpisode(episode, 'netflix', netflixPlayItemId()),
       });
     }
   },

@@ -35,6 +35,7 @@ export class ExtensionBridgeService {
   private readonly lastEventSignal = signal<string | null>(null);
   private readonly syncWarningSignal = signal<ExtensionSyncWarningState | null>(null);
   private initialized = false;
+  private messageChain: Promise<void> = Promise.resolve();
 
   readonly connected = this.connectedSignal.asReadonly();
   readonly lastEvent = this.lastEventSignal.asReadonly();
@@ -64,7 +65,11 @@ export class ExtensionBridgeService {
         return;
       }
 
-      void this.ngZone.run(() => this.handleExtensionMessage(data as ExtensionBridgeMessage));
+      void this.ngZone.run(() => {
+        this.messageChain = this.messageChain
+          .then(() => this.dispatchExtensionMessage(data as ExtensionBridgeMessage))
+          .catch((error) => console.error('[Arrowverse] extension bridge error:', error));
+      });
     });
 
     void this.bootstrapBridge();
@@ -78,7 +83,7 @@ export class ExtensionBridgeService {
     this.postToExtension({ source: APP_SOURCE, type: 'PONG' });
   }
 
-  private async handleExtensionMessage(message: ExtensionBridgeMessage): Promise<void> {
+  private async dispatchExtensionMessage(message: ExtensionBridgeMessage): Promise<void> {
     await this.progressService.init();
     this.connectedSignal.set(true);
 
@@ -91,7 +96,7 @@ export class ExtensionBridgeService {
 
       case 'EPISODE_STARTED':
         if (message.payload) {
-          this.notifyEpisodeStarted(message.payload);
+          await this.notifyEpisodeStarted(message.payload);
         }
         break;
 
@@ -131,7 +136,7 @@ export class ExtensionBridgeService {
       return;
     }
 
-    await this.progressService.setStatus(episode.row_number, 'partial', 'extension');
+    await this.progressService.setStatus(episode.row_number, 'partial', episode.provider ?? 'extension', episode.play_item_id);
     this.lastEventSignal.set(
       `${episode.series} · ${episode.episode_id} · in progress`,
     );
@@ -146,7 +151,12 @@ export class ExtensionBridgeService {
       return;
     }
 
-    await this.progressService.setWatched(episode.row_number, true, 'extension');
+    await this.progressService.setWatched(
+      episode.row_number,
+      true,
+      episode.provider ?? 'extension',
+      episode.play_item_id,
+    );
     await this.gamificationService.handleWatchChange(episode.row_number, true);
 
     this.syncWarningSignal.set(null);
@@ -167,9 +177,18 @@ export class ExtensionBridgeService {
     this.publishSyncState();
   }
 
-  private notifyEpisodeStarted(episode: ExtensionEpisodePayload): void {
+  private async notifyEpisodeStarted(episode: ExtensionEpisodePayload): Promise<void> {
+    if (!this.progressService.isWatched(episode.row_number)) {
+      await this.progressService.setStatus(
+        episode.row_number,
+        'partial',
+        episode.provider ?? 'extension',
+        episode.play_item_id,
+      );
+    }
+
     this.lastEventSignal.set(
-      `${episode.series} · ${episode.episode_id} · ${episode.episode_name}`,
+      `${episode.series} · ${episode.episode_id} · in progress`,
     );
 
     this.messages.add({
@@ -179,35 +198,41 @@ export class ExtensionBridgeService {
       life: 6000,
     });
 
-    this.checkAndWarnOutOfSync(episode);
+    await this.checkAndWarnOutOfSync(episode);
   }
 
-  private checkAndWarnOutOfSync(playing: ExtensionEpisodePayload): void {
-    this.episodeService
-      .getEpisodes()
-      .pipe(take(1))
-      .subscribe((episodes) => {
-        const warning = this.buildSyncWarning(playing, episodes);
-        if (!warning) {
-          this.syncWarningSignal.set(null);
-          return;
-        }
+  private async checkAndWarnOutOfSync(playing: ExtensionEpisodePayload): Promise<void> {
+    const episodes = await new Promise<ArrowverseEpisode[]>((resolve) => {
+      this.episodeService
+        .getEpisodes()
+        .pipe(take(1))
+        .subscribe((items) => resolve(items));
+    });
 
-        this.syncWarningSignal.set({
-          playing: warning.playing,
-          upNext: warning.upNext,
-          skippedCount: warning.skippedCount,
-        });
+    const warning = this.buildSyncWarning(playing, episodes);
+    if (!warning) {
+      this.syncWarningSignal.set(null);
+      return;
+    }
 
-        this.postToExtension(warning);
+    this.syncWarningSignal.set({
+      playing: warning.playing,
+      upNext: warning.upNext,
+      skippedCount: warning.skippedCount,
+    });
 
-        this.messages.add({
-          severity: 'warn',
-          summary: 'Out of Watch Order',
-          detail: `You're on #${playing.row_number} ${playing.series} · ${playing.episode_name}, but up next is #${warning.upNext.row_number} ${warning.upNext.series} · ${warning.upNext.episode_name}.`,
-          life: 9000,
-        });
-      });
+    this.postToExtension(warning);
+
+    this.messages.add({
+      severity: 'warn',
+      summary: 'Out of Watch Order',
+      detail: `You're on #${playing.row_number} ${playing.series} · ${playing.episode_name}, but up next is #${warning.upNext.row_number} ${warning.upNext.series} · ${warning.upNext.episode_name}.`,
+      life: 9000,
+    });
+  }
+
+  private isLikelyAutoAdvance(playingRow: number, upNextRow: number): boolean {
+    return playingRow === upNextRow + 1;
   }
 
   private buildSyncWarning(
@@ -222,6 +247,10 @@ export class ExtensionBridgeService {
 
     const upNext = episodes.find((episode) => !watched.has(episode.row_number)) ?? null;
     if (!upNext || playing.row_number <= upNext.row_number) {
+      return null;
+    }
+
+    if (this.isLikelyAutoAdvance(playing.row_number, upNext.row_number)) {
       return null;
     }
 

@@ -76,7 +76,8 @@ CREATE TABLE IF NOT EXISTS watched_episodes (
   user_id BIGINT NOT NULL,
   `row_number` INT NOT NULL,
   watched_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  source VARCHAR(16) NOT NULL DEFAULT 'manual',
+  source VARCHAR(32) NOT NULL DEFAULT 'manual',
+  play_item_id VARCHAR(64) NULL,
   status VARCHAR(16) NOT NULL DEFAULT 'watched',
   PRIMARY KEY (user_id, `row_number`),
   CONSTRAINT fk_watched_episodes_user_id

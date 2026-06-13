@@ -12,7 +12,8 @@ class WatchedEpisode(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     row_number: Mapped[int] = mapped_column("row_number", Integer, primary_key=True, quote=True)
     watched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    source: Mapped[str] = mapped_column(String(16), default="manual")
+    source: Mapped[str] = mapped_column(String(32), default="manual")
+    play_item_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[str] = mapped_column(String(16), default="watched")
 
     user = relationship("User", back_populates="watched_episodes")

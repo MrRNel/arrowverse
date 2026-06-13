@@ -1,0 +1,259 @@
+<section class="page dashboard">
+  <header class="page__header">
+    <p class="page__eyebrow">Multiverse command center</p>
+    <h1>Dashboard</h1>
+    <p class="page__subtitle">
+      Your timeline at a glance — rank, continuity, crossovers, and where to jump back in.
+    </p>
+  </header>
+
+  <app-hero-banner />
+
+  <app-episode-dashboard [showPartial]="true" [hideUpNext]="true" />
+
+  <div class="dashboard__focus">
+    <article class="spotlight">
+      <div class="spotlight__glow"></div>
+      <p class="spotlight__eyebrow">Up next in watch order</p>
+
+      @if (upNext(); as next) {
+        <div class="spotlight__body">
+          <div class="spotlight__media">
+            <img [src]="iconFor(next.series)" [alt]="next.series" loading="lazy" />
+            <span class="spotlight__order">#{{ next.row_number }}</span>
+          </div>
+
+          <div class="spotlight__content">
+            <h2>{{ next.episode_name }}</h2>
+            <div class="spotlight__meta">
+              <p-tag [value]="next.series" severity="info" />
+              <span>{{ upNextCode() }}</span>
+              <span>{{ next.air_date }}</span>
+            </div>
+            <p class="spotlight__hint">
+              {{ watchedCount() }} of {{ totalCount() }} logged · {{ progressPercent() }}% continuity
+            </p>
+            <div class="spotlight__actions">
+              <button type="button" class="dashboard-link dashboard-link--primary" (click)="playUpNext()">
+                <i class="pi pi-play" aria-hidden="true"></i>
+                {{ upNextPlayLabel() }}
+              </button>
+              <a routerLink="/watch-order" class="dashboard-link">
+                <i class="pi pi-list" aria-hidden="true"></i>
+                Watch order
+              </a>
+              <a [routerLink]="['/series', showIdFor(next.series)]" class="dashboard-link">
+                <i class="pi pi-th-large" aria-hidden="true"></i>
+                Browse {{ next.series }}
+              </a>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="spotlight__complete">
+          <i class="pi pi-check-circle" aria-hidden="true"></i>
+          <h2>Timeline secured</h2>
+          <p>Every episode in the global watch order is marked finished. Crisis averted.</p>
+          <a routerLink="/hero-codex" class="dashboard-link dashboard-link--primary">
+            View Hero Codex
+          </a>
+        </div>
+      }
+    </article>
+
+    <aside class="dashboard__aside">
+      @if (profile().activeCrossover) {
+        <app-crossover-card />
+      } @else {
+        <p-card styleClass="mission-card">
+          <p class="mission-card__eyebrow">Mission briefing</p>
+          <h3>No active crossover block</h3>
+          <p>You're between major events. Keep logging episodes in order to protect the timeline.</p>
+          <p-progressBar [value]="progressPercent()" [showValue]="false" styleClass="mission-card__bar" />
+          <span class="mission-card__hint">{{ progressPercent() }}% of the multiverse logged</span>
+        </p-card>
+      }
+
+      <p-card
+        styleClass="bridge-card"
+        [class.bridge-card--connected]="extensionConnected() && !extensionSyncWarning()"
+        [class.bridge-card--warning]="extensionSyncWarning()"
+      >
+        <div class="bridge-card__header">
+          <span
+            class="bridge-card__dot"
+            [class.is-connected]="extensionConnected() && !extensionSyncWarning()"
+            [class.is-warning]="extensionSyncWarning()"
+          ></span>
+          <span>Player extension</span>
+        </div>
+        <p class="bridge-card__status">
+          @if (extensionSyncWarning()) {
+            Out of watch order — check the sidebar for details
+          } @else if (extensionConnected()) {
+            Connected — Netflix & Jellyfin sync active
+          } @else {
+            Install the browser extension for automatic episode detection
+          }
+        </p>
+        @if (extensionLastEvent(); as event) {
+          <p class="bridge-card__event">{{ event }}</p>
+        }
+      </p-card>
+    </aside>
+  </div>
+
+  <section class="dashboard__section">
+    <div class="dashboard__section-head">
+      <div>
+        <h2>Timeline progress</h2>
+        <p>
+          Crossover-aware story arcs in global watch order ·
+          {{ timelineSummary().complete }} / {{ timelineSummary().total }} segments complete
+        </p>
+      </div>
+      <a routerLink="/watch-order" class="dashboard-link">Open watch order</a>
+    </div>
+
+    <div class="timeline-track" aria-hidden="true">
+      @for (segment of timelineProgress(); track segment.id) {
+        <span
+          class="timeline-track__chunk"
+          [class.timeline-track__chunk--crossover]="segment.kind === 'crossover'"
+          [class.timeline-track__chunk--complete]="segment.complete"
+          [class.timeline-track__chunk--active]="segment.active"
+          [style.flex]="segment.total"
+          [title]="segment.name"
+        ></span>
+      }
+    </div>
+
+    <div class="timeline-progress-list">
+      @for (segment of timelineProgress(); track segment.id) {
+        <article
+          class="timeline-segment"
+          [class.timeline-segment--crossover]="segment.kind === 'crossover'"
+          [class.timeline-segment--complete]="segment.complete"
+          [class.timeline-segment--active]="segment.active"
+        >
+          <div class="timeline-segment__marker">
+            <i [class]="segment.icon" aria-hidden="true"></i>
+          </div>
+          <div class="timeline-segment__body">
+            <div class="timeline-segment__head">
+              <div>
+                <h3>{{ segment.name }}</h3>
+                <p>{{ segment.tagline }}</p>
+              </div>
+              <div class="timeline-segment__stats">
+                @if (segment.active) {
+                  <span class="timeline-segment__badge">Current</span>
+                } @else if (segment.complete) {
+                  <span class="timeline-segment__badge timeline-segment__badge--done">Complete</span>
+                }
+                <span>{{ segment.watched }} / {{ segment.total }} · {{ segment.percent }}%</span>
+              </div>
+            </div>
+            <p-progressBar [value]="segment.percent" [showValue]="false" />
+            <span class="timeline-segment__rows">Rows #{{ segment.startRow }}–{{ segment.endRow }}</span>
+          </div>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="dashboard__section">
+    <div class="dashboard__section-head">
+      <div>
+        <h2>Series progress</h2>
+        <p>Completion across every show in the Arrowverse timeline.</p>
+      </div>
+      <a routerLink="/series" class="dashboard-link">View all series</a>
+    </div>
+
+    <div class="show-progress-grid">
+      @for (show of showProgress(); track show.showId) {
+        <a [routerLink]="['/series', show.showId]" class="show-progress-card">
+          <img [src]="show.icon" [alt]="show.name" loading="lazy" />
+          <div class="show-progress-card__body">
+            <div class="show-progress-card__title">{{ show.name }}</div>
+            <div class="show-progress-card__meta">
+              {{ show.watched }} / {{ show.total }} · {{ show.percent }}%
+            </div>
+            <p-progressBar [value]="show.percent" [showValue]="false" />
+          </div>
+        </a>
+      }
+    </div>
+  </section>
+
+  <section class="dashboard__section">
+    <div class="dashboard__section-head">
+      <div>
+        <h2>Hero Codex highlights</h2>
+        <p>
+          {{ profile().unlockedCount }} achievements unlocked ·
+          {{ profile().continuityPercent }}% continuity honor
+        </p>
+      </div>
+      <a routerLink="/hero-codex" class="dashboard-link">Open codex</a>
+    </div>
+
+    <div class="achievement-panels">
+      @if (unlockedAchievements().length > 0) {
+        <div class="achievement-panel">
+          <h3>Recently earned</h3>
+          <div class="achievement-list">
+            @for (achievement of unlockedAchievements(); track achievement.id) {
+              <article class="achievement-chip achievement-chip--unlocked">
+                <i [class]="achievement.icon" aria-hidden="true"></i>
+                <div>
+                  <strong>{{ achievement.name }}</strong>
+                  <span>{{ achievement.description }}</span>
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+      }
+
+      @if (inProgressAchievements().length > 0) {
+        <div class="achievement-panel">
+          <h3>Closing in</h3>
+          <div class="achievement-list">
+            @for (achievement of inProgressAchievements(); track achievement.id) {
+              <article class="achievement-chip">
+                <i [class]="achievement.icon" aria-hidden="true"></i>
+                <div>
+                  <strong>{{ achievement.name }}</strong>
+                  <span>{{ achievement.progress }} / {{ achievement.total }} · {{ achievementPercent(achievement) }}%</span>
+                  <p-progressBar [value]="achievementPercent(achievement)" [showValue]="false" />
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+      } @else if (unlockedAchievements().length === 0) {
+        <p-card styleClass="mission-card">
+          <p>Log episodes in crossover order to start unlocking legacy achievements.</p>
+          <a routerLink="/watch-order" class="dashboard-link dashboard-link--primary">Start watch order</a>
+        </p-card>
+      }
+    </div>
+  </section>
+
+  <nav class="dashboard__quick-nav" aria-label="Quick navigation">
+    <a routerLink="/watch-order" class="quick-nav-card">
+      <i class="pi pi-list" aria-hidden="true"></i>
+      <span>Watch order</span>
+    </a>
+    <a routerLink="/hero-codex" class="quick-nav-card">
+      <i class="pi pi-star" aria-hidden="true"></i>
+      <span>Hero codex</span>
+    </a>
+    <a routerLink="/series" class="quick-nav-card">
+      <i class="pi pi-th-large" aria-hidden="true"></i>
+      <span>Series browser</span>
+    </a>
+  </nav>
+</section>

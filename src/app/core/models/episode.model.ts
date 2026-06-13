@@ -33,3 +33,18 @@ export interface WatchStats {
   upNext: ArrowverseEpisode | null;
   progressPercent: number;
 }
+
+export interface TimelineSegment {
+  id: string;
+  name: string;
+  tagline: string;
+  icon: string;
+  kind: 'arc' | 'crossover';
+  startRow: number;
+  endRow: number;
+  watched: number;
+  total: number;
+  percent: number;
+  complete: boolean;
+  active: boolean;
+}

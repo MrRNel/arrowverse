@@ -1,4 +1,9 @@
-<div class="dashboard" [class.dashboard--compact]="compact()">
+<div
+  class="dashboard"
+  [class.dashboard--compact]="compact()"
+  [class.dashboard--with-partial]="showPartial()"
+  [class.dashboard--no-next]="hideUpNext()"
+>
   <p-card styleClass="stat-card stat-card--watched">
     <div class="stat-card__label">Episodes Logged</div>
     <div class="stat-card__value">{{ watched() }}</div>
@@ -17,7 +22,16 @@
     <p-progressBar [value]="progressPercent()" [showValue]="false" styleClass="dashboard-progress" />
   </p-card>
 
-  <p-card styleClass="stat-card stat-card--next">
+  @if (showPartial()) {
+    <p-card styleClass="stat-card stat-card--partial">
+      <div class="stat-card__label">In Progress</div>
+      <div class="stat-card__value">{{ partialCount() }}</div>
+      <div class="stat-card__hint">episodes started but not finished</div>
+    </p-card>
+  }
+
+  @if (!hideUpNext()) {
+    <p-card styleClass="stat-card stat-card--next">
     <div class="stat-card__label">Next in Order</div>
     @if (upNext(); as next) {
       <div class="up-next">
@@ -33,4 +47,5 @@
       <div class="up-next up-next--complete">You have saved this watch order.</div>
     }
   </p-card>
+  }
 </div>

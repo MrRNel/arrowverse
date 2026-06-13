@@ -21,6 +21,10 @@ export class EpisodeDashboardComponent {
   private readonly progressService = inject(WatchProgressService);
 
   readonly compact = input(false);
+  readonly showPartial = input(false);
+  readonly hideUpNext = input(false);
+
+  readonly partialCount = computed(() => this.progressService.partial().size);
 
   private readonly stats = toSignal(
     toObservable(this.progressService.watched).pipe(

@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 EpisodeStatus = Literal['unwatched', 'partial', 'watched']
+WatchSource = Literal['manual', 'jellyfin', 'netflix', 'extension']
 
 
 class EpisodePayload(BaseModel):
@@ -18,6 +19,7 @@ class WatchedEpisodeRecord(BaseModel):
     row_number: int
     watched_at: datetime
     source: str
+    play_item_id: str | None = None
     status: EpisodeStatus = 'watched'
 
 
@@ -30,7 +32,8 @@ class ProgressResponse(BaseModel):
 class ProgressUpdateRequest(BaseModel):
     status: EpisodeStatus | None = None
     watched: bool | None = None
-    source: str = Field(default='manual', pattern=r'^(manual|extension)$')
+    source: WatchSource = Field(default='manual')
+    play_item_id: str | None = Field(default=None, max_length=64)
 
     @model_validator(mode='after')
     def resolve_status(self) -> 'ProgressUpdateRequest':
@@ -45,7 +48,8 @@ class ProgressUpdateRequest(BaseModel):
 
 class BulkProgressRequest(BaseModel):
     row_numbers: list[int]
-    source: str = Field(default='extension', pattern=r'^(manual|extension)$')
+    source: WatchSource = Field(default='extension')
+    play_item_id: str | None = Field(default=None, max_length=64)
 
 
 class ProgressStatsResponse(BaseModel):
