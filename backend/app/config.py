@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     db_user: str = "arrowverse"
     db_password: str = "arrowverse"
     database_url: str | None = None
+    db_pool_recycle_seconds: int = 300
     jwt_secret: str = "dev-secret-change-in-production"
     jwt_algorithm: str = "HS256"
     jwt_access_minutes: int = 15
@@ -48,9 +49,11 @@ class Settings(BaseSettings):
     def build_database_url(self) -> "Settings":
         if not self.database_url:
             self.database_url = (
-                f"mysql+aiomysql://{quote_plus(self.db_user)}:{quote_plus(self.db_password)}"
+                f"mysql+asyncmy://{quote_plus(self.db_user)}:{quote_plus(self.db_password)}"
                 f"@{self.db_host}:{self.db_port}/{self.db_name}"
             )
+        elif self.database_url.startswith("mysql+aiomysql://"):
+            self.database_url = self.database_url.replace("mysql+aiomysql://", "mysql+asyncmy://", 1)
         return self
 
     @property

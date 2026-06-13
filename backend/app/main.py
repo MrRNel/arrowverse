@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from app.config import get_settings
-from app.database import Base, engine
+from app.database import Base, dispose_engine, engine
 from app.routers import auth, progress
 from app.routers import settings as user_settings_router
 from fastapi import FastAPI, Request
@@ -78,6 +78,10 @@ def create_app() -> FastAPI:
     async def startup() -> None:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+    @app.on_event("shutdown")
+    async def shutdown() -> None:
+        await dispose_engine()
 
     dist_path = Path(settings.frontend_dist)
     if dist_path.exists():
