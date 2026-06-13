@@ -4,6 +4,8 @@ Chrome extension (Manifest V3) that detects Arrowverse episodes on **Netflix** o
 
 ## Setup
 
+**Production URL:** set `appUrl` in `src/environments/environment.production.ts`, then follow the full checklist in [README.md — Production URL checklist](../README.md#production-url-checklist) (CORS, Docker `APP_URL`, sync, reload).
+
 1. Set your production URL in `src/environments/environment.production.ts` (`appUrl`).
 2. Sync extension data from Angular env + watch order:
 

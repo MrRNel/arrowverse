@@ -64,6 +64,40 @@ npm start
 
 **Production & Docker:** see [MONOREPO.md](MONOREPO.md)
 
+## Production URL checklist
+
+When you deploy to a new domain (e.g. `https://arrowverse.example.com`), update the **same public origin** everywhere below. Use **no trailing slash**. The Angular `apiUrl` stays `'/api'` — do not put the API host in environment files.
+
+| Where | What to set | Notes |
+|-------|-------------|--------|
+| **`src/environments/environment.production.ts`** | `appUrl: 'https://…'` | **Edit this first** — source of truth for the web app |
+| **Coolify / Docker build arg** | `APP_URL=https://…` | Injects into `environment.production.ts` at image build if it differs from the file |
+| **`Dockerfile`** | `ARG APP_URL=https://…` | Default when no build arg is passed |
+| **`.env.docker` / `docker-compose.yml`** | `APP_URL=https://…` | Local Docker only |
+| **Coolify / container runtime env** | `CORS_ORIGINS=https://…` | Backend must allow your public origin |
+| **`backend/.env.production`** (or server env) | `CORS_ORIGINS=https://…` | Same value as `appUrl` when not using Docker env vars |
+
+Then sync the browser extension (reads `appUrl` from the Angular env files):
+
+```bash
+npm run sync:extension
+```
+
+That updates `browser-extension/lib/config.js` and adds your prod URL to `browser-extension/manifest.json` `host_permissions`. **Reload the extension** at `chrome://extensions` after syncing.
+
+Extension options can override dev/prod URLs at runtime; defaults come from the synced config. If you only change the domain in git, run `sync:extension` and reload — you do not need to hand-edit `browser-extension/lib/config.js`.
+
+**Do not change for prod:** `environment.development.ts`, `environment.ts`, or `apiUrl` (keep `'/api'`). Dev stays on `http://localhost:4200` with the proxy to `:8000`.
+
+**Coolify example**
+
+| Setting | Value |
+|---------|--------|
+| Build arg | `APP_URL=https://arrowverse.example.com` |
+| Runtime | `CORS_ORIGINS=https://arrowverse.example.com`, plus `DB_*`, `JWT_SECRET`, `ENVIRONMENT=production` |
+
+More deploy detail: [MONOREPO.md — Production & Docker](MONOREPO.md#production-single-url)
+
 ## Repository layout
 
 ```

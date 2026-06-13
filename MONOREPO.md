@@ -75,6 +75,8 @@ Opening a **new terminal in Cursor/VS Code** for this repo automatically loads `
 
 ## Production (single URL)
 
+**Changing your public domain?** See [README.md — Production URL checklist](README.md#production-url-checklist) for every file and env var to update (Angular, Docker, CORS, extension).
+
 ```bash
 npm run build
 copy backend\.env.production.example backend\.env.production
