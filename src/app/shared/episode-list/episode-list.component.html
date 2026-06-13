@@ -10,8 +10,9 @@
     @for (episode of episodes(); track episode.row_number; let index = $index) {
       <article
         class="episode-row"
-        [class.episode-row--watched]="episodeStatus(episode.row_number) === 'watched'"
+        [class.episode-row--unwatched]="episodeStatus(episode.row_number) === 'unwatched'"
         [class.episode-row--partial]="episodeStatus(episode.row_number) === 'partial'"
+        [class.episode-row--watched]="episodeStatus(episode.row_number) === 'watched'"
         [class.episode-row--next]="isUpNext(episode, index)"
       >
         <div class="episode-row__order">#{{ episode.row_number }}</div>
@@ -46,7 +47,14 @@
             optionValue="value"
             styleClass="episode-status-select"
             size="small"
-          />
+            [allowEmpty]="false"
+            [unselectable]="true"
+          >
+            <ng-template #item let-option>
+              <i [class]="option.icon" aria-hidden="true"></i>
+              <span>{{ option.label }}</span>
+            </ng-template>
+          </p-selectbutton>
         </div>
       </article>
     }
