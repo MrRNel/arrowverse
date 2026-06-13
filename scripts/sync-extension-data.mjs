@@ -1,4 +1,5 @@
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -109,19 +110,13 @@ manifest.content_scripts = manifest.content_scripts.filter(
 
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 
-const iconSource = join(root, 'public/favicon.ico');
-try {
-  copyFileSync(iconSource, join(extensionRoot, 'icons/icon16.png'));
-  copyFileSync(iconSource, join(extensionRoot, 'icons/icon48.png'));
-  copyFileSync(iconSource, join(extensionRoot, 'icons/icon128.png'));
-} catch {
-  const tinyPng = Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-    'base64',
-  );
-  writeFileSync(join(extensionRoot, 'icons/icon16.png'), tinyPng);
-  writeFileSync(join(extensionRoot, 'icons/icon48.png'), tinyPng);
-  writeFileSync(join(extensionRoot, 'icons/icon128.png'), tinyPng);
+const iconResult = spawnSync('node', ['scripts/generate-icons.mjs'], {
+  cwd: root,
+  stdio: 'inherit',
+});
+
+if (iconResult.status !== 0) {
+  process.exit(iconResult.status ?? 1);
 }
 
 console.log('Synced browser extension data:');

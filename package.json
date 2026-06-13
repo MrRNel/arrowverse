@@ -9,6 +9,8 @@
     "start:prod": "npm run build && cross-env ENVIRONMENT=production node scripts/run-api-prod.mjs",
     "db:schema": "node scripts/print-db-schema.mjs",
     "db:init": "node scripts/init-db.mjs",
+    "db:migrate": "node scripts/migrate-db.mjs",
+    "icons:generate": "node scripts/generate-icons.mjs",
     "setup:backend": "powershell -ExecutionPolicy Bypass -File scripts/setup-backend.ps1",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
@@ -17,8 +19,8 @@
     "docker:build": "docker compose build",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
-    "prestart": "npm run sync:extension",
-    "prebuild": "npm run sync:extension"
+    "prestart": "npm run icons:generate && npm run sync:extension",
+    "prebuild": "npm run icons:generate && npm run sync:extension"
   },
   "private": true,
   "packageManager": "npm@11.11.0",
@@ -49,6 +51,8 @@
     "cross-env": "^7.0.3",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
+    "sharp": "^0.34.5",
+    "to-ico": "^1.1.5",
     "typescript": "~6.0.3",
     "vitest": "^4.0.8"
   }

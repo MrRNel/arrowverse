@@ -13,6 +13,7 @@ class WatchedEpisode(Base):
     row_number: Mapped[int] = mapped_column("row_number", Integer, primary_key=True, quote=True)
     watched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     source: Mapped[str] = mapped_column(String(16), default="manual")
+    status: Mapped[str] = mapped_column(String(16), default="watched")
 
     user = relationship("User", back_populates="watched_episodes")
 

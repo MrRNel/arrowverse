@@ -1,4 +1,9 @@
-export type ExtensionEventType = 'EPISODE_STARTED' | 'EPISODE_COMPLETED' | 'SYNC_PENDING' | 'PING';
+export type ExtensionEventType =
+  | 'EPISODE_STARTED'
+  | 'EPISODE_PARTIAL'
+  | 'EPISODE_COMPLETED'
+  | 'SYNC_PENDING'
+  | 'PING';
 
 export type ExtensionAppEventType = 'PONG' | 'ACK' | 'ERROR' | 'SYNC_STATE' | 'SYNC_WARNING' | 'AUTH_STATE';
 
@@ -15,6 +20,7 @@ export interface ExtensionBridgeMessage {
   type: ExtensionEventType;
   payload?: ExtensionEpisodePayload;
   pending?: ExtensionEpisodePayload[];
+  progress?: number | null;
 }
 
 export interface ExtensionSyncStateMessage {

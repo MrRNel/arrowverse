@@ -1,6 +1,6 @@
 import { EXTENSION_CONFIG, getAppUrl, isAppUrl } from './lib/config.js';
 import { getJellyfinMatchPatterns, getJellyfinOrigin } from './lib/jellyfin-url.js';
-import { markEpisodeOnApi, saveAuthState } from './lib/api-client.js';
+import { markEpisodeOnApi, saveAuthState, setEpisodeStatusOnApi } from './lib/api-client.js';
 import { EpisodeMatcher } from './lib/episode-matcher.js';
 
 const matcherUrl = chrome.runtime.getURL('data/watch-order.json');
@@ -484,6 +484,23 @@ async function handleMessage(message, sender) {
           'Open the Arrowverse tracker and sign in to sync extension progress.',
         );
       }
+    }
+
+    return relayResult;
+  }
+
+  if (message.type === 'EPISODE_PARTIAL' && message.payload) {
+    const episode = message.payload;
+    const relayResult = await relayToApp({
+      source: 'arrowverse-extension',
+      type: 'EPISODE_PARTIAL',
+      payload: episode,
+      progress: message.progress ?? null,
+    });
+
+    if (!relayResult.delivered) {
+      const activeConfig = await loadConfig();
+      await setEpisodeStatusOnApi(activeConfig, episode, 'partial');
     }
 
     return relayResult;

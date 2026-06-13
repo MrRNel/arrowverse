@@ -41,6 +41,11 @@
   opacity: 0.72;
 }
 
+.episode-row--partial {
+  border-color: rgba(251, 191, 36, 0.45);
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.12);
+}
+
 .episode-row--next {
   border-color: rgba(0, 212, 255, 0.55);
   box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.15), var(--av-glow);
@@ -101,6 +106,15 @@
   letter-spacing: 0.06em;
   padding: 0.2rem 0.55rem;
   text-transform: uppercase;
+}
+
+:host ::ng-deep .episode-status-select .p-togglebutton {
+  font-size: 0.72rem;
+  padding: 0.35rem 0.5rem;
+}
+
+:host ::ng-deep .episode-status-select .p-togglebutton-content {
+  white-space: nowrap;
 }
 
 @media (max-width: 900px) {

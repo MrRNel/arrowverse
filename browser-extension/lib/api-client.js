@@ -64,7 +64,7 @@ export async function ensureAccessToken(config) {
   return refreshed?.accessToken ?? null;
 }
 
-export async function markEpisodeOnApi(config, episode) {
+export async function setEpisodeStatusOnApi(config, episode, status) {
   const accessToken = await ensureAccessToken(config);
   if (!accessToken) {
     return { ok: false, reason: 'not-authenticated' };
@@ -77,7 +77,7 @@ export async function markEpisodeOnApi(config, episode) {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    body: JSON.stringify({ watched: true, source: 'extension' }),
+    body: JSON.stringify({ status, source: 'extension' }),
   });
 
   if (response.status === 401) {
@@ -86,6 +86,10 @@ export async function markEpisodeOnApi(config, episode) {
   }
 
   return { ok: response.ok, reason: response.ok ? null : `status-${response.status}` };
+}
+
+export async function markEpisodeOnApi(config, episode) {
+  return setEpisodeStatusOnApi(config, episode, 'watched');
 }
 
 export { getAppUrl, isAppUrl };

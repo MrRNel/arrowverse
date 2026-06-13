@@ -22,24 +22,50 @@ async function completeEpisodeOnStop({
   sendRuntimeMessage,
   isExtensionDead,
   reason,
+  COMPLETION_THRESHOLD,
+  PARTIAL_MIN,
 }) {
-  if (
-    !lastMatchedEpisode ||
-    !startedEpisodeKey ||
-    completedEpisodeKey === startedEpisodeKey ||
-    lastKnownProgress < 0.5
-  ) {
+  if (!lastMatchedEpisode || !startedEpisodeKey || completedEpisodeKey === startedEpisodeKey) {
     return false;
   }
 
-  completedEpisodeKey = startedEpisodeKey;
-  await sendRuntimeMessage({
-    type: 'EPISODE_COMPLETED',
-    payload: lastMatchedEpisode,
-    reason,
-  });
+  if (lastKnownProgress >= COMPLETION_THRESHOLD) {
+    completedEpisodeKey = startedEpisodeKey;
+    await sendRuntimeMessage({
+      type: 'EPISODE_COMPLETED',
+      payload: lastMatchedEpisode,
+      reason,
+    });
+    return !isExtensionDead();
+  }
 
-  return !isExtensionDead();
+  if (lastKnownProgress >= PARTIAL_MIN) {
+    await sendRuntimeMessage({
+      type: 'EPISODE_PARTIAL',
+      payload: lastMatchedEpisode,
+      progress: lastKnownProgress,
+      reason,
+    });
+  }
+
+  return false;
+}
+
+function playbackProgress(session) {
+  const apiProgress = jellyfin.sessionProgress(session);
+  const video = shared.queryDeep('video');
+  const videoProgress =
+    video?.duration && video.duration > 0 ? video.currentTime / video.duration : null;
+
+  if (videoProgress !== null) {
+    return { progress: videoProgress, source: 'video' };
+  }
+
+  if (apiProgress !== null) {
+    return { progress: apiProgress, source: 'api' };
+  }
+
+  return { progress: 0, source: 'none' };
 }
 
 shared.createMonitor({
@@ -89,6 +115,8 @@ shared.createMonitor({
         sendRuntimeMessage,
         isExtensionDead,
         reason: 'session-ended',
+        COMPLETION_THRESHOLD,
+        PARTIAL_MIN: 0.15,
       });
       resetState();
       await storeDebug({
@@ -158,16 +186,9 @@ shared.createMonitor({
       },
     });
 
-    const apiProgress = jellyfin.sessionProgress(session);
-    const video = shared.queryDeep('video');
-    const videoProgress =
-      video?.duration && video.duration > 0 ? video.currentTime / video.duration : null;
-    const progress = videoProgress ?? apiProgress ?? 0;
+    const { progress } = playbackProgress(session);
     lastKnownProgress = Math.max(lastKnownProgress, progress);
-    const isEnded =
-      video?.ended ||
-      progress >= COMPLETION_THRESHOLD ||
-      (apiProgress !== null && apiProgress >= COMPLETION_THRESHOLD);
+    const isEnded = progress >= COMPLETION_THRESHOLD;
 
     if (isEnded && completedEpisodeKey !== episodeKey) {
       completedEpisodeKey = episodeKey;

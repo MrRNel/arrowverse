@@ -77,10 +77,14 @@ CREATE TABLE IF NOT EXISTS watched_episodes (
   `row_number` INT NOT NULL,
   watched_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   source VARCHAR(16) NOT NULL DEFAULT 'manual',
+  status VARCHAR(16) NOT NULL DEFAULT 'watched',
   PRIMARY KEY (user_id, `row_number`),
   CONSTRAINT fk_watched_episodes_user_id
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Existing databases: run once if the status column is missing
+-- ALTER TABLE watched_episodes ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'watched' AFTER source;
 
 CREATE TABLE IF NOT EXISTS user_gamification_meta (
   user_id BIGINT NOT NULL,

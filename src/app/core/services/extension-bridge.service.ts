@@ -101,6 +101,12 @@ export class ExtensionBridgeService {
         }
         break;
 
+      case 'EPISODE_PARTIAL':
+        if (message.payload) {
+          await this.markEpisodePartial(message.payload);
+        }
+        break;
+
       case 'SYNC_PENDING':
         if (message.pending?.length) {
           for (const episode of message.pending) {
@@ -118,6 +124,18 @@ export class ExtensionBridgeService {
     }
 
     this.postToExtension({ source: APP_SOURCE, type: 'ACK' });
+  }
+
+  private async markEpisodePartial(episode: ExtensionEpisodePayload): Promise<void> {
+    if (this.progressService.isWatched(episode.row_number)) {
+      return;
+    }
+
+    await this.progressService.setStatus(episode.row_number, 'partial', 'extension');
+    this.lastEventSignal.set(
+      `${episode.series} · ${episode.episode_id} · in progress`,
+    );
+    this.publishSyncState();
   }
 
   private async markEpisodeCompleted(

@@ -10,7 +10,8 @@
     @for (episode of episodes(); track episode.row_number; let index = $index) {
       <article
         class="episode-row"
-        [class.episode-row--watched]="isWatched(episode.row_number)"
+        [class.episode-row--watched]="episodeStatus(episode.row_number) === 'watched'"
+        [class.episode-row--partial]="episodeStatus(episode.row_number) === 'partial'"
         [class.episode-row--next]="isUpNext(episode, index)"
       >
         <div class="episode-row__order">#{{ episode.row_number }}</div>
@@ -37,13 +38,14 @@
           @if (isUpNext(episode, index)) {
             <span class="episode-row__badge">Up Next</span>
           }
-          <p-button
-            [label]="isWatched(episode.row_number) ? 'Watched' : 'Mark Watched'"
-            [icon]="isWatched(episode.row_number) ? 'pi pi-check' : 'pi pi-circle'"
-            [outlined]="!isWatched(episode.row_number)"
-            [severity]="isWatched(episode.row_number) ? 'success' : 'secondary'"
+          <p-selectbutton
+            [options]="statusOptions"
+            [ngModel]="episodeStatus(episode.row_number)"
+            (ngModelChange)="onStatusChange(episode.row_number, $event)"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="episode-status-select"
             size="small"
-            (onClick)="toggleWatched(episode.row_number)"
           />
         </div>
       </article>

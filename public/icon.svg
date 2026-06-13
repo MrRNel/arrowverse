@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Arrowverse Tracker">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a1220"/>
+      <stop offset="100%" stop-color="#060b14"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d4ff"/>
+      <stop offset="55%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#00d4ff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="42%" r="55%">
+      <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.32"/>
+      <stop offset="70%" stop-color="#7c3aed" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#060b14" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="18" y="18" width="476" height="476" rx="98" fill="none" stroke="url(#ring)" stroke-width="10"/>
+  <circle cx="256" cy="248" r="170" fill="url(#glow)"/>
+
+  <!-- Arrow / A mark -->
+  <path
+    d="M256 132 L372 360 H318 L256 236 L194 360 H140 Z"
+    fill="#00d4ff"
+    opacity="0.2"
+  />
+  <path
+    d="M256 152 L348 344 H304 L256 252 L208 344 H164 Z"
+    fill="#e8eefc"
+  />
+  <path
+    d="M204 272 H308"
+    stroke="#00d4ff"
+    stroke-width="24"
+    stroke-linecap="round"
+  />
+
+  <!-- AV monogram -->
+  <g fill="#e8eefc">
+    <path d="M168 360 H204 L228 288 H284 L308 360 H344 L296 360 L282 320 H230 L216 360 H168 Z M236 256 L256 204 L276 256 H236 Z" fill-rule="evenodd" opacity="0.92"/>
+  </g>
+
+  <!-- Timeline ticks -->
+  <g stroke="#00d4ff" stroke-linecap="round" opacity="0.7">
+    <line x1="120" y1="388" x2="144" y2="388" stroke-width="10"/>
+    <line x1="164" y1="388" x2="180" y2="388" stroke-width="10"/>
+    <line x1="332" y1="388" x2="348" y2="388" stroke-width="10"/>
+    <line x1="368" y1="388" x2="392" y2="388" stroke-width="10"/>
+  </g>
+</svg>
