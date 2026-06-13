@@ -5,8 +5,63 @@ import { EpisodeMatcher } from './lib/episode-matcher.js';
 
 const matcherUrl = chrome.runtime.getURL('data/watch-order.json');
 const JELLYFIN_SCRIPT_ID = 'arrowverse-jellyfin';
+const APP_BRIDGE_SCRIPT_ID = 'arrowverse-app-bridge';
 let matcher = null;
 let config = { ...EXTENSION_CONFIG };
+let registerTimer = null;
+
+function toOriginPattern(url) {
+  return `${new URL(url).origin}/*`;
+}
+
+function isInjectableUrl(url) {
+  return typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'));
+}
+
+async function hasHostPermissionForUrl(url) {
+  if (!isInjectableUrl(url)) {
+    return false;
+  }
+
+  try {
+    return chrome.permissions.contains({ origins: [toOriginPattern(url)] });
+  } catch {
+    return false;
+  }
+}
+
+async function upsertContentScript(id, definition) {
+  const registered = await chrome.scripting.getRegisteredContentScripts();
+  const payload = { id, ...definition };
+
+  if (registered.some((entry) => entry.id === id)) {
+    await chrome.scripting.updateContentScripts([payload]);
+    return;
+  }
+
+  try {
+    await chrome.scripting.registerContentScripts([payload]);
+  } catch (error) {
+    const message = String(error?.message ?? error);
+    if (message.includes('Duplicate script ID')) {
+      await chrome.scripting.updateContentScripts([payload]);
+      return;
+    }
+    throw error;
+  }
+}
+
+async function registerDynamicContentScripts() {
+  await registerJellyfinContentScript();
+  await registerAppBridgeContentScript();
+}
+
+function scheduleDynamicContentScripts() {
+  clearTimeout(registerTimer);
+  registerTimer = setTimeout(() => {
+    void registerDynamicContentScripts();
+  }, 50);
+}
 
 async function ensureMatcher() {
   if (!matcher) {
@@ -33,19 +88,96 @@ async function loadConfig() {
   return config;
 }
 
+async function getAppBridgePatterns() {
+  const activeConfig = await loadConfig();
+  const urls = [activeConfig.developmentAppUrl, activeConfig.productionAppUrl].filter(Boolean);
+  return [...new Set(urls.map((value) => `${value.replace(/\/$/, '')}/*`))];
+}
+
+async function ensureAppHostPermission(pattern) {
+  const hasPermission = await chrome.permissions.contains({ origins: [pattern] });
+  if (hasPermission) {
+    return true;
+  }
+
+  try {
+    return await chrome.permissions.request({ origins: [pattern] });
+  } catch {
+    return false;
+  }
+}
+
+async function registerAppBridgeContentScript() {
+  const patterns = await getAppBridgePatterns();
+  const allowedPatterns = [];
+
+  for (const pattern of patterns) {
+    if (await ensureAppHostPermission(pattern)) {
+      allowedPatterns.push(pattern);
+    } else {
+      console.warn('[Arrowverse] Tracker host permission not granted for', pattern);
+    }
+  }
+
+  if (!allowedPatterns.length) {
+    return;
+  }
+
+  await upsertContentScript(APP_BRIDGE_SCRIPT_ID, {
+    matches: allowedPatterns,
+    js: ['content-app-bridge.js'],
+    runAt: 'document_idle',
+  });
+}
+
+async function ensureAppBridgeTab(tabId, url) {
+  const activeConfig = await loadConfig();
+  if (!isInjectableUrl(url) || !isAppUrl(url, activeConfig)) {
+    return;
+  }
+
+  if (!(await hasHostPermissionForUrl(url))) {
+    console.warn('[Arrowverse] Missing host permission for tracker tab:', url);
+    return;
+  }
+
+  try {
+    await chrome.tabs.sendMessage(tabId, { source: 'arrowverse-extension', type: 'PING' });
+    return;
+  } catch {
+    // Bridge not attached yet.
+  }
+
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['content-app-bridge.js'],
+    });
+  } catch (error) {
+    console.warn('[Arrowverse] Could not inject app bridge:', error);
+  }
+}
+
 async function relayToApp(message) {
   const activeConfig = await loadConfig();
-  const appUrl = getAppUrl(activeConfig);
-  const tabs = await chrome.tabs.query({ url: `${appUrl}/*` });
+  const patterns = await getAppBridgePatterns();
+  const tabs = [];
 
-  if (!tabs.length) {
+  for (const pattern of patterns) {
+    const matched = await chrome.tabs.query({ url: pattern });
+    tabs.push(...matched);
+  }
+
+  const uniqueTabs = [...new Map(tabs.filter((tab) => tab.id).map((tab) => [tab.id, tab])).values()];
+
+  if (!uniqueTabs.length) {
     const pending = (await chrome.storage.local.get('pendingEvents')).pendingEvents ?? [];
     pending.push({ ...message, createdAt: Date.now() });
     await chrome.storage.local.set({ pendingEvents: pending.slice(-25) });
     return { delivered: false, queued: true };
   }
 
-  for (const tab of tabs) {
+  for (const tab of uniqueTabs) {
     if (!tab.id) {
       continue;
     }
@@ -53,6 +185,10 @@ async function relayToApp(message) {
     try {
       await chrome.tabs.sendMessage(tab.id, message);
     } catch {
+      if (!(await hasHostPermissionForUrl(tab.url ?? ''))) {
+        continue;
+      }
+
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         files: ['content-app-bridge.js'],
@@ -168,38 +304,32 @@ async function ensureJellyfinPermission(origin) {
 async function registerJellyfinContentScript() {
   const activeConfig = await loadConfig();
   const patterns = getJellyfinMatchPatterns(activeConfig);
-  if (!patterns.length) {
-    return;
-  }
+  const allowedPatterns = [];
 
   for (const pattern of patterns) {
     const allowed = await ensureJellyfinPermission(pattern.replace(/\/\*$/, ''));
-    if (!allowed) {
+    if (allowed) {
+      allowedPatterns.push(pattern);
+    } else {
       console.warn('[Arrowverse] Jellyfin host permission not granted for', pattern);
-      return;
     }
   }
 
-  try {
-    await chrome.scripting.unregisterContentScripts({ ids: [JELLYFIN_SCRIPT_ID] });
-  } catch {
-    // First registration.
+  if (!allowedPatterns.length) {
+    return;
   }
 
-  await chrome.scripting.registerContentScripts([
-    {
-      id: JELLYFIN_SCRIPT_ID,
-      matches: patterns,
-      js: ['lib/content-shared.js', 'lib/jellyfin-client.js', 'content-jellyfin.js'],
-      runAt: 'document_idle',
-    },
-  ]);
+  await upsertContentScript(JELLYFIN_SCRIPT_ID, {
+    matches: allowedPatterns,
+    js: ['lib/content-shared.js', 'lib/uuid.js', 'lib/jellyfin-client.js', 'content-jellyfin.js'],
+    runAt: 'document_idle',
+  });
 }
 
 async function injectPlayerMonitor(tabId, provider) {
   const files =
     provider === 'jellyfin'
-      ? ['lib/content-shared.js', 'lib/jellyfin-client.js', 'content-jellyfin.js']
+      ? ['lib/content-shared.js', 'lib/uuid.js', 'lib/jellyfin-client.js', 'content-jellyfin.js']
       : ['lib/content-shared.js', 'content-netflix.js'];
 
   await chrome.scripting.executeScript({
@@ -211,18 +341,24 @@ async function injectPlayerMonitor(tabId, provider) {
 chrome.runtime.onInstalled.addListener(async () => {
   await loadConfig();
   await ensureMatcher();
-  await registerJellyfinContentScript();
+  scheduleDynamicContentScripts();
 });
 
 chrome.runtime.onStartup.addListener(async () => {
   await loadConfig();
   await ensureMatcher();
-  await registerJellyfinContentScript();
+  scheduleDynamicContentScripts();
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'sync') {
-    void loadConfig().then(() => registerJellyfinContentScript());
+    void loadConfig().then(() => scheduleDynamicContentScripts());
+  }
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url) {
+    void ensureAppBridgeTab(tabId, tab.url);
   }
 });
 
@@ -372,7 +508,19 @@ async function handleMessage(message, sender) {
   if (message.type === 'SAVE_CONFIG') {
     await chrome.storage.sync.set(message.config);
     config = { ...config, ...message.config };
-    await registerJellyfinContentScript();
+    await registerDynamicContentScripts();
+
+    const patterns = await getAppBridgePatterns();
+    const tabs = [];
+    for (const pattern of patterns) {
+      tabs.push(...(await chrome.tabs.query({ url: pattern })));
+    }
+    for (const tab of tabs) {
+      if (tab.id && tab.url) {
+        await ensureAppBridgeTab(tab.id, tab.url);
+      }
+    }
+
     return { ok: true };
   }
 

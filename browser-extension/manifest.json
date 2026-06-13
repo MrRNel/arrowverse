@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Arrowverse Tracker Bridge",
   "description": "Detect Arrowverse episodes on Netflix or Jellyfin and sync watch progress with the Arrowverse tracker app.",
-  "version": "1.0.11",
+  "version": "1.0.13",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -20,7 +20,7 @@
     "http://127.0.0.1:8096/*",
     "http://jellyfin:8096/*",
     "http://localhost:4200/*",
-    "https://arrowverse.example.com/*"
+    "https://arrowverse.forgenetics.co.za/*"
   ],
   "optional_host_permissions": [
     "http://*/*",
@@ -38,30 +38,6 @@
       "js": [
         "lib/content-shared.js",
         "content-netflix.js"
-      ],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "http://localhost:8096/*",
-        "http://127.0.0.1:8096/*",
-        "http://jellyfin:8096/*"
-      ],
-      "js": [
-        "lib/content-shared.js",
-        "lib/uuid.js",
-        "lib/jellyfin-client.js",
-        "content-jellyfin.js"
-      ],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "http://localhost:4200/*",
-        "https://arrowverse.example.com/*"
-      ],
-      "js": [
-        "content-app-bridge.js"
       ],
       "run_at": "document_idle"
     }

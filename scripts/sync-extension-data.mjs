@@ -103,15 +103,9 @@ manifest.host_permissions = [
   devPattern,
   prodPattern,
 ];
-manifest.content_scripts = manifest.content_scripts.map((entry) => {
-  if (entry.js?.includes('content-jellyfin.js')) {
-    return { ...entry, matches: DEFAULT_JELLYFIN_PATTERNS };
-  }
-  if (entry.js?.includes('content-app-bridge.js')) {
-    return { ...entry, matches: [devPattern, prodPattern] };
-  }
-  return entry;
-});
+manifest.content_scripts = manifest.content_scripts.filter(
+  (entry) => !entry.js?.includes('content-jellyfin.js') && !entry.js?.includes('content-app-bridge.js'),
+);
 
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 

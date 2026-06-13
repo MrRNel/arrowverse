@@ -35,6 +35,17 @@ form.addEventListener('submit', async (event) => {
       jellyfinServerUrl: jellyfinInput.value.trim(),
     };
 
+    for (const url of [config.developmentAppUrl, config.productionAppUrl]) {
+      const pattern = `${new URL(url).origin}/*`;
+      const allowed = await chrome.permissions.contains({ origins: [pattern] });
+      if (!allowed) {
+        const granted = await chrome.permissions.request({ origins: [pattern] });
+        if (!granted) {
+          throw new Error(`Permission required for ${pattern}`);
+        }
+      }
+    }
+
     await chrome.runtime.sendMessage({
       type: 'SAVE_CONFIG',
       config,
@@ -42,7 +53,7 @@ form.addEventListener('submit', async (event) => {
 
     status.dataset.state = 'success';
     status.textContent =
-      'Settings saved. Reload Netflix, Jellyfin, and your tracker tab if they are already open.';
+      'Settings saved. Reload the extension at chrome://extensions, then refresh your tracker tab (F5).';
   } catch (error) {
     status.dataset.state = 'error';
     status.textContent = `Could not save settings: ${String(error)}`;
