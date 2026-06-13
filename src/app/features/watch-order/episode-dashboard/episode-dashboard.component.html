@@ -1,0 +1,36 @@
+<div class="dashboard" [class.dashboard--compact]="compact()">
+  <p-card styleClass="stat-card stat-card--watched">
+    <div class="stat-card__label">Episodes Logged</div>
+    <div class="stat-card__value">{{ watched() }}</div>
+    <div class="stat-card__hint">of {{ total() }} episodes</div>
+  </p-card>
+
+  <p-card styleClass="stat-card stat-card--outstanding">
+    <div class="stat-card__label">Timeline Gaps</div>
+    <div class="stat-card__value">{{ outstanding() }}</div>
+    <div class="stat-card__hint">remaining in continuity order</div>
+  </p-card>
+
+  <p-card styleClass="stat-card stat-card--progress">
+    <div class="stat-card__label">Continuity</div>
+    <div class="stat-card__value">{{ progressPercent() }}%</div>
+    <p-progressBar [value]="progressPercent()" [showValue]="false" styleClass="dashboard-progress" />
+  </p-card>
+
+  <p-card styleClass="stat-card stat-card--next">
+    <div class="stat-card__label">Next in Order</div>
+    @if (upNext(); as next) {
+      <div class="up-next">
+        <div class="up-next__order">#{{ next.row_number }}</div>
+        <div class="up-next__title">{{ next.episode_name }}</div>
+        <div class="up-next__meta">
+          <p-tag [value]="next.series" severity="info" />
+          <span>{{ upNextCode() }}</span>
+          <span>{{ next.air_date }}</span>
+        </div>
+      </div>
+    } @else {
+      <div class="up-next up-next--complete">You have saved this watch order.</div>
+    }
+  </p-card>
+</div>

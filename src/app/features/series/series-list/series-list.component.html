@@ -1,0 +1,24 @@
+<section class="page">
+  <header class="page__header">
+    <p class="page__eyebrow">Browse by show</p>
+    <h1>Series</h1>
+    <p class="page__subtitle">Pick a show to explore its seasons and track progress per series.</p>
+  </header>
+
+  <div class="series-grid">
+    @for (show of shows; track show.id) {
+      <a [routerLink]="['/series', show.id]" class="series-card-link">
+        <p-card styleClass="series-card">
+          <div class="series-card__media" [style.--show-accent]="show.accent">
+            <img [src]="show.icon" [alt]="show.name" class="series-card__image" loading="lazy" />
+            <div class="series-card__overlay"></div>
+          </div>
+          <div class="series-card__body">
+            <h2>{{ show.name }}</h2>
+            <p>{{ seasonsForShow(show.id).length }} seasons</p>
+          </div>
+        </p-card>
+      </a>
+    }
+  </div>
+</section>

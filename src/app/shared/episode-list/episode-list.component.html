@@ -1,0 +1,52 @@
+<section class="episode-list">
+  <div class="episode-list__header">
+    <div>
+      <h2>{{ title() }}</h2>
+      <p>{{ episodes().length }} episodes</p>
+    </div>
+  </div>
+
+  <div class="episode-list__items">
+    @for (episode of episodes(); track episode.row_number; let index = $index) {
+      <article
+        class="episode-row"
+        [class.episode-row--watched]="isWatched(episode.row_number)"
+        [class.episode-row--next]="isUpNext(episode, index)"
+      >
+        <div class="episode-row__order">#{{ episode.row_number }}</div>
+
+        <div class="episode-row__show">
+          <img
+            [src]="iconFor(episode.series)"
+            [alt]="episode.series"
+            class="episode-row__show-image"
+            loading="lazy"
+          />
+        </div>
+
+        <div class="episode-row__content">
+          <div class="episode-row__title">{{ episode.episode_name }}</div>
+          <div class="episode-row__meta">
+            <p-tag [value]="episode.series" />
+            <span>{{ formatCode(episode.episode_id) }}</span>
+            <span>{{ episode.air_date }}</span>
+          </div>
+        </div>
+
+        <div class="episode-row__actions">
+          @if (isUpNext(episode, index)) {
+            <span class="episode-row__badge">Up Next</span>
+          }
+          <p-button
+            [label]="isWatched(episode.row_number) ? 'Watched' : 'Mark Watched'"
+            [icon]="isWatched(episode.row_number) ? 'pi pi-check' : 'pi pi-circle'"
+            [outlined]="!isWatched(episode.row_number)"
+            [severity]="isWatched(episode.row_number) ? 'success' : 'secondary'"
+            size="small"
+            (onClick)="toggleWatched(episode.row_number)"
+          />
+        </div>
+      </article>
+    }
+  </div>
+</section>

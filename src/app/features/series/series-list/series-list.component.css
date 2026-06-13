@@ -1,0 +1,111 @@
+.series-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.series-card-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+:host ::ng-deep .series-card {
+  background: var(--av-surface);
+  border: 1px solid var(--av-border);
+  box-shadow: var(--av-glow);
+  height: 100%;
+  overflow: hidden;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+:host ::ng-deep .series-card:hover {
+  border-color: rgba(0, 212, 255, 0.4);
+  box-shadow: 0 12px 32px rgba(0, 212, 255, 0.12);
+  transform: translateY(-3px);
+}
+
+:host ::ng-deep .series-card .p-card-body {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.series-card__media {
+  aspect-ratio: 2 / 3;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--show-accent) 35%, #0a1220), #0a1220),
+    var(--av-sidebar);
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.series-card__image {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  transition: transform 0.35s ease;
+  width: 100%;
+}
+
+.series-card-link:hover .series-card__image {
+  transform: scale(1.04);
+}
+
+.series-card__overlay {
+  background: linear-gradient(180deg, transparent 45%, rgba(6, 11, 20, 0.92) 100%);
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.series-card__body {
+  padding: 0.9rem 1rem 1rem;
+}
+
+.series-card__body h2 {
+  color: var(--av-text);
+  font-size: 1rem;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.series-card__body p {
+  color: var(--av-muted);
+  font-size: 0.85rem;
+  margin: 0.35rem 0 0;
+}
+
+.page__eyebrow,
+.page__subtitle,
+.page__header h1 {
+  /* shared with watch-order */
+}
+
+.page__eyebrow {
+  color: var(--av-accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.page__header h1 {
+  color: var(--av-text);
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  margin: 0.35rem 0 0;
+}
+
+.page__subtitle {
+  color: var(--av-muted);
+  margin: 0.5rem 0 0;
+}
+
+.page__header {
+  margin-bottom: 1.25rem;
+}

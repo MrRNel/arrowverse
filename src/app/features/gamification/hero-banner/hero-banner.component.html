@@ -1,0 +1,37 @@
+<p-card styleClass="hero-banner">
+  <div class="hero-banner__grid">
+    <div class="hero-banner__identity">
+      <div class="hero-banner__rank-icon">
+        <i [class]="profile().rank.icon"></i>
+      </div>
+      <div>
+        <p class="hero-banner__eyebrow">Hero Rank</p>
+        <h2>{{ profile().rank.name }}</h2>
+        <p class="hero-banner__tagline">{{ profile().rank.tagline }}</p>
+      </div>
+    </div>
+
+    <div class="hero-banner__stat">
+      <span class="hero-banner__label">Experience</span>
+      <strong>{{ profile().xp | number }} XP</strong>
+      @if (profile().nextRank; as next) {
+        <p-progressBar [value]="profile().rankProgress" [showValue]="false" styleClass="hero-banner__bar" />
+        <span class="hero-banner__hint">Next: {{ next.name }}</span>
+      } @else {
+        <span class="hero-banner__hint">Maximum rank achieved</span>
+      }
+    </div>
+
+    <div class="hero-banner__stat">
+      <span class="hero-banner__label">Timeline Integrity</span>
+      <strong>{{ profile().streak }} in order</strong>
+      <span class="hero-banner__hint">Best streak: {{ profile().bestStreak }}</span>
+    </div>
+
+    <div class="hero-banner__stat">
+      <span class="hero-banner__label">Legacy Unlocked</span>
+      <strong>{{ profile().unlockedCount }} achievements</strong>
+      <p-tag [value]="profile().continuityPercent + '% continuity'" severity="info" />
+    </div>
+  </div>
+</p-card>

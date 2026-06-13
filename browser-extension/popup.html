@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Arrowverse Bridge</title>
+    <link rel="stylesheet" href="lib/extension-ui.css" />
+  </head>
+  <body class="av-popup">
+    <div class="av-scene">
+      <div class="av-grid"></div>
+      <div class="av-orb av-orb--cyan"></div>
+      <div class="av-orb av-orb--violet"></div>
+
+      <main class="av-card av-card--popup">
+        <div class="av-card__glow"></div>
+
+        <header class="av-header">
+          <div class="av-logo">AV</div>
+          <div>
+            <p class="av-kicker">Multiverse Access Terminal</p>
+            <h1>Player Bridge</h1>
+            <p class="av-subtitle">Sync Netflix and Jellyfin with your watch order.</p>
+          </div>
+        </header>
+
+        <section class="av-panel">
+          <p class="av-section-label">Active provider</p>
+          <div id="provider-label" class="av-badge" data-state="checking">Checking tab…</div>
+        </section>
+
+        <section id="status" class="av-status" data-state="info">Checking player tab…</section>
+
+        <section id="tracker-status" class="av-tracker" data-state="warn">Checking tracker link…</section>
+
+        <div class="av-actions">
+          <button id="inject" type="button" class="av-btn av-btn--primary">Connect to player tab</button>
+          <button id="open-options" type="button" class="av-btn">Extension options</button>
+        </div>
+
+        <p class="av-section-label">Tips</p>
+        <p class="av-tips">
+          Keep the tracker open at localhost (or your prod URL) and stay signed in. Netflix needs the
+          episode label visible in the player once; Jellyfin reads episode metadata from its API while
+          you play.
+        </p>
+
+        <p class="av-footnote">PKCE session · refresh tokens · MySQL-backed progress</p>
+      </main>
+    </div>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

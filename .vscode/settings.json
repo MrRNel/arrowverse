@@ -1,0 +1,21 @@
+{
+  "terminal.integrated.defaultProfile.windows": "Arrowverse",
+  "terminal.integrated.profiles.windows": {
+    "Arrowverse": {
+      "source": "PowerShell",
+      "icon": "terminal-powershell",
+      "args": [
+        "-NoLogo",
+        "-NoExit",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/scripts/Activate-Arrowverse.ps1"
+      ]
+    },
+    "PowerShell": {
+      "source": "PowerShell",
+      "icon": "terminal-powershell"
+    }
+  }
+}

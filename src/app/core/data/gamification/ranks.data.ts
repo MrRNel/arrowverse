@@ -1,0 +1,76 @@
+import { RankTier } from '../../models/gamification.model';
+
+export const RANK_TIERS: RankTier[] = [
+  { id: 'hood', name: 'The Hood', minEpisodes: 0, tagline: 'Lian Yu forged you.', icon: 'pi pi-shield' },
+  { id: 'vigilante', name: 'Vigilante', minEpisodes: 16, tagline: 'Starling City knows your name.', icon: 'pi pi-eye' },
+  {
+    id: 'starling',
+    name: 'Starling Citizen',
+    minEpisodes: 47,
+    tagline: 'A speedster changed everything.',
+    icon: 'pi pi-bolt',
+  },
+  {
+    id: 'star-labs',
+    name: 'S.T.A.R. Labs Recruit',
+    minEpisodes: 118,
+    tagline: 'Hope, help, and compassion for all.',
+    icon: 'pi pi-sun',
+  },
+  {
+    id: 'legend-trainee',
+    name: 'Legend in Training',
+    minEpisodes: 142,
+    tagline: 'Destiny is a bitch.',
+    icon: 'pi pi-compass',
+  },
+  {
+    id: 'dominator',
+    name: 'Dominator Survivor',
+    minEpisodes: 228,
+    tagline: 'The invasion did not break you.',
+    icon: 'pi pi-globe',
+  },
+  {
+    id: 'freedom-fighter',
+    name: 'Freedom Fighter',
+    minEpisodes: 313,
+    tagline: 'Earth-X fell to your queue.',
+    icon: 'pi pi-flag',
+  },
+  {
+    id: 'monitor',
+    name: "Monitor's Chosen",
+    minEpisodes: 436,
+    tagline: 'Elseworlds opened your eyes.',
+    icon: 'pi pi-sparkles',
+  },
+  {
+    id: 'paragon',
+    name: 'Paragon',
+    minEpisodes: 534,
+    tagline: 'Seven were chosen. You watched them all.',
+    icon: 'pi pi-star-fill',
+  },
+  {
+    id: 'post-crisis',
+    name: 'Post-Crisis Hero',
+    minEpisodes: 549,
+    tagline: 'A new merged Earth awaits.',
+    icon: 'pi pi-verified',
+  },
+  {
+    id: 'speed-force',
+    name: 'Speed Force Conduit',
+    minEpisodes: 661,
+    tagline: 'Run, Barry, run.',
+    icon: 'pi pi-forward',
+  },
+  {
+    id: 'sentinel',
+    name: 'Arrowverse Sentinel',
+    minEpisodes: 817,
+    tagline: '830 episodes. One timeline. Complete.',
+    icon: 'pi pi-crown',
+  },
+];

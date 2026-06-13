@@ -1,0 +1,2 @@
+# Requires Python 3.12–3.14 (3.12 recommended).
+# Pydantic 2.12+ provides prebuilt wheels for 3.14; older pins fail with Rust build errors.

@@ -1,0 +1,116 @@
+.episode-list__header h2 {
+  color: var(--av-text);
+  font-size: 1.35rem;
+  margin: 0;
+}
+
+.episode-list__header p {
+  color: var(--av-muted);
+  margin: 0.35rem 0 0;
+}
+
+.episode-list__items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.episode-row {
+  align-items: center;
+  background: var(--av-surface);
+  border: 1px solid var(--av-border);
+  border-radius: 1rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 4rem 3.5rem minmax(0, 1fr) auto;
+  padding: 0.9rem 1rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.episode-row:hover {
+  border-color: rgba(0, 212, 255, 0.35);
+  box-shadow: var(--av-glow);
+  transform: translateY(-1px);
+}
+
+.episode-row--watched {
+  opacity: 0.72;
+}
+
+.episode-row--next {
+  border-color: rgba(0, 212, 255, 0.55);
+  box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.15), var(--av-glow);
+}
+
+.episode-row__order {
+  color: var(--av-accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.episode-row__show {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.episode-row__show-image {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  height: 3.5rem;
+  object-fit: cover;
+  width: 3.5rem;
+}
+
+.episode-row__title {
+  color: var(--av-text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.episode-row__meta {
+  align-items: center;
+  color: var(--av-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+
+.episode-row__actions {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.episode-row__badge {
+  background: rgba(0, 212, 255, 0.12);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  border-radius: 999px;
+  color: var(--av-accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.55rem;
+  text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+  .episode-row {
+    grid-template-columns: 3rem 3rem minmax(0, 1fr);
+  }
+
+  .episode-row__actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}

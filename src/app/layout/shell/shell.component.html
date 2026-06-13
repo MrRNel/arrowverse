@@ -1,0 +1,78 @@
+<div class="shell">
+  <p-toast position="top-right" />
+  <aside class="shell__sidebar">
+    <div class="shell__brand">
+      <div class="shell__brand-mark">AV</div>
+      <div>
+        <div class="shell__brand-title">Arrowverse</div>
+        <div class="shell__brand-subtitle">Watch Tracker</div>
+      </div>
+    </div>
+
+    <div class="shell__rank-card">
+      <div class="shell__rank-label">Current Rank</div>
+      <div class="shell__rank-name">{{ profile().rank.name }}</div>
+      <div class="shell__rank-meta">{{ profile().xp | number }} XP · {{ profile().streak }} streak</div>
+    </div>
+
+    <p-menu [model]="menuItems" styleClass="shell-menu" />
+
+    <div class="shell__user-card">
+      <div class="shell__user-label">Signed in</div>
+      <div class="shell__user-name">{{ user()?.display_name }}</div>
+      <div class="shell__user-meta">@{{ user()?.username }}</div>
+      <button type="button" class="shell__logout" (click)="logout()">Sign out</button>
+    </div>
+
+    <div
+      class="shell__extension-card"
+      [class.is-connected-card]="extensionConnected() && !extensionSyncWarning()"
+      [class.is-warning]="extensionSyncWarning()"
+    >
+      <div class="shell__extension-header">
+        <span
+          class="shell__extension-dot"
+          [class.is-connected]="extensionConnected() && !extensionSyncWarning()"
+          [class.is-warning]="extensionSyncWarning()"
+        ></span>
+        Player Extension
+      </div>
+      <div class="shell__extension-status">
+        @if (extensionSyncWarning()) {
+          Out of watch order
+        } @else if (extensionConnected()) {
+          Connected
+        } @else {
+          Waiting for browser extension
+        }
+      </div>
+      @if (extensionSyncWarning(); as warning) {
+        <div class="shell__extension-warning">
+          <div class="shell__extension-warning-title">You're ahead of your tracker</div>
+          <div class="shell__extension-warning-row">
+            <span class="shell__extension-warning-label">Playing</span>
+            #{{ warning.playing.row_number }} {{ warning.playing.series }} ·
+            {{ warning.playing.episode_id }}
+          </div>
+          <div class="shell__extension-warning-row">
+            <span class="shell__extension-warning-label">Up next</span>
+            #{{ warning.upNext.row_number }} {{ warning.upNext.series }} ·
+            {{ warning.upNext.episode_name }}
+          </div>
+        </div>
+      } @else if (extensionLastEvent()) {
+        <div class="shell__extension-event">{{ extensionLastEvent() }}</div>
+      }
+    </div>
+
+    <div class="shell__footer">
+      <a href="https://github.com/AceFire6/ordered-arrowverse" target="_blank" rel="noopener">
+        Data by ordered-arrowverse
+      </a>
+    </div>
+  </aside>
+
+  <main class="shell__main">
+    <router-outlet />
+  </main>
+</div>

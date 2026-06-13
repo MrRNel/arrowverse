@@ -1,0 +1,24 @@
+@if (show(); as currentShow) {
+  <section class="page">
+    <header class="page__header">
+      <a [routerLink]="['/series', showId()]" class="back-link">
+        <i class="pi pi-arrow-left"></i>
+        {{ currentShow.name }}
+      </a>
+      <div class="show-hero">
+        <img [src]="currentShow.icon" [alt]="currentShow.name" class="show-hero__icon" />
+        <div>
+          <p class="page__eyebrow">Season {{ season() }}</p>
+          <h1>{{ currentShow.name }}</h1>
+          <p class="page__subtitle">Episodes for this season in global watch-order context.</p>
+        </div>
+      </div>
+    </header>
+
+    <app-episode-list
+      [showId]="showId()"
+      [season]="season()"
+      [title]="'Season ' + season() + ' Episodes'"
+    />
+  </section>
+}

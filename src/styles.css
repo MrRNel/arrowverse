@@ -1,0 +1,51 @@
+/* Layer order: bootstrap layout utilities → PrimeNG UI → app overrides */
+@layer bootstrap, primeng, app-styles;
+
+@import 'bootstrap/dist/css/bootstrap-grid.min.css' layer(bootstrap);
+@import 'bootstrap/dist/css/bootstrap-utilities.min.css' layer(bootstrap);
+@import 'primeicons/primeicons.css' layer(app-styles);
+
+@layer app-styles {
+  :root {
+    --av-bg: #060b14;
+    --av-sidebar: #0a1220;
+    --av-surface: rgba(12, 20, 36, 0.88);
+    --av-border: rgba(120, 164, 255, 0.14);
+    --av-text: #e8eefc;
+    --av-muted: #8ea0c6;
+    --av-accent: #00d4ff;
+    --av-glow: 0 10px 30px rgba(0, 212, 255, 0.08);
+  }
+
+  html,
+  body {
+    background:
+      radial-gradient(circle at top left, rgba(0, 212, 255, 0.12), transparent 28%),
+      radial-gradient(circle at top right, rgba(124, 58, 237, 0.12), transparent 24%),
+      var(--av-bg);
+    color: var(--av-text);
+    font-family: Inter, system-ui, sans-serif;
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  .shell__brand-title {
+    font-family: Orbitron, Inter, sans-serif;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  .page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+}

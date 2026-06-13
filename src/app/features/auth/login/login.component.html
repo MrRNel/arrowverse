@@ -1,0 +1,101 @@
+<div class="auth-scene">
+  <p-toast position="top-center" />
+  <div class="auth-grid"></div>
+  <div class="auth-orb auth-orb--cyan"></div>
+  <div class="auth-orb auth-orb--violet"></div>
+
+  <main class="auth-card">
+    <div class="auth-card__glow"></div>
+
+    <header class="auth-card__header">
+      <div class="auth-logo">AV</div>
+      <div>
+        <p class="auth-kicker">Multiverse Access Terminal</p>
+        <h1>Arrowverse Tracker</h1>
+        <p class="auth-subtitle">Sync your watch order across web, extension, and timeline.</p>
+      </div>
+    </header>
+
+    <div class="auth-tabs">
+      <p-button
+        label="Sign in"
+        [outlined]="mode() !== 'login'"
+        styleClass="auth-tab-btn"
+        (onClick)="setMode('login')"
+      />
+      <p-button
+        label="Register"
+        [outlined]="mode() !== 'register'"
+        styleClass="auth-tab-btn"
+        (onClick)="setMode('register')"
+      />
+    </div>
+
+    <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
+      @if (mode() === 'register') {
+        <p-floatlabel variant="in" class="auth-field">
+          <input pInputText id="displayName" formControlName="displayName" autocomplete="nickname" fluid />
+          <label for="displayName">Display name</label>
+        </p-floatlabel>
+
+        <p-floatlabel variant="in" class="auth-field">
+          <input pInputText id="username" formControlName="username" autocomplete="username" fluid />
+          <label for="username">Username</label>
+        </p-floatlabel>
+        @if (form.controls.username.touched && form.controls.username.hasError('pattern')) {
+          <p class="auth-field-error">Use letters, numbers, underscores, or hyphens only (no spaces).</p>
+        } @else if (form.controls.username.touched && form.controls.username.hasError('required')) {
+          <p class="auth-field-error">Username is required.</p>
+        }
+      }
+
+      <p-floatlabel variant="in" class="auth-field">
+        <input pInputText id="email" formControlName="email" type="email" autocomplete="email" fluid />
+        <label for="email">Email</label>
+      </p-floatlabel>
+
+      <p-floatlabel variant="in" class="auth-field">
+        <p-password
+          inputId="password"
+          formControlName="password"
+          [toggleMask]="true"
+          [feedback]="mode() === 'register'"
+          [autocomplete]="mode() === 'register' ? 'new-password' : 'current-password'"
+          fluid
+        />
+        <label for="password">Password</label>
+      </p-floatlabel>
+
+      @if (mode() === 'register') {
+        <p-floatlabel variant="in" class="auth-field">
+          <p-password
+            inputId="confirmPassword"
+            formControlName="confirmPassword"
+            [toggleMask]="true"
+            [feedback]="false"
+            autocomplete="new-password"
+            fluid
+          />
+          <label for="confirmPassword">Confirm password</label>
+        </p-floatlabel>
+        @if (
+          (form.controls.confirmPassword.touched || form.controls.password.touched) &&
+          form.hasError('passwordMismatch')
+        ) {
+          <p class="auth-field-error">Passwords do not match.</p>
+        }
+      }
+
+      <p-button
+        type="submit"
+        styleClass="auth-submit"
+        [disabled]="loading()"
+        [label]="loading() ? 'Authenticating…' : mode() === 'login' ? 'Enter the timeline' : 'Create account'"
+      />
+    </form>
+
+    <p class="auth-footnote">
+      PKCE-secured session · refresh tokens for extension bridge · MySQL-backed progress
+    </p>
+  </main>
+</div>

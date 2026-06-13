@@ -1,0 +1,96 @@
+.page__eyebrow {
+  color: var(--av-accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.page__header h1 {
+  color: var(--av-text);
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  margin: 0.35rem 0 0;
+}
+
+.page__subtitle {
+  color: var(--av-muted);
+  margin: 0.5rem 0 0;
+}
+
+.page__header {
+  margin-bottom: 1rem;
+}
+
+app-hero-banner {
+  display: block;
+  margin-bottom: 1.25rem;
+}
+
+.codex-section h2 {
+  color: var(--av-text);
+  font-size: 1.1rem;
+  margin: 0 0 0.75rem;
+}
+
+.codex-section + .codex-section {
+  margin-top: 1.5rem;
+}
+
+.codex-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  margin-top: 1rem;
+}
+
+:host ::ng-deep .codex-card {
+  background: var(--av-surface);
+  border: 1px solid var(--av-border);
+  height: 100%;
+  opacity: 0.72;
+}
+
+:host ::ng-deep .codex-card--unlocked {
+  border-color: rgba(0, 212, 255, 0.35);
+  box-shadow: var(--av-glow);
+  opacity: 1;
+}
+
+:host ::ng-deep .codex-card .p-card-body {
+  display: flex;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+.codex-card__icon {
+  align-items: center;
+  background: rgba(0, 212, 255, 0.1);
+  border-radius: 0.85rem;
+  color: var(--av-accent);
+  display: flex;
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  height: 2.8rem;
+  justify-content: center;
+  width: 2.8rem;
+}
+
+.codex-card__title-row {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.codex-card__body h3 {
+  color: var(--av-text);
+  font-size: 1rem;
+  margin: 0;
+}
+
+.codex-card__body p {
+  color: var(--av-muted);
+  font-size: 0.85rem;
+  margin: 0.45rem 0 0;
+}

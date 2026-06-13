@@ -1,0 +1,36 @@
+<section class="page">
+  <header class="page__header">
+    <p class="page__eyebrow">Legacy registry</p>
+    <h1>Hero Codex</h1>
+    <p class="page__subtitle">
+      Crossover milestones, legacy finales, and timeline honors earned across the multiverse.
+    </p>
+  </header>
+
+  <app-hero-banner />
+
+  @for (group of groupedAchievements(); track group[0]) {
+    <section class="codex-section">
+      <h2>{{ categoryLabels[group[0]] }}</h2>
+      <div class="codex-grid">
+        @for (achievement of group[1]; track achievement.id) {
+          <p-card styleClass="codex-card" [class.codex-card--unlocked]="achievement.unlocked">
+            <div class="codex-card__icon">
+              <i [class]="achievement.icon"></i>
+            </div>
+            <div class="codex-card__body">
+              <div class="codex-card__title-row">
+                <h3>{{ achievement.name }}</h3>
+                <p-tag
+                  [value]="achievement.unlocked ? 'Unlocked' : achievement.progress + '/' + achievement.total"
+                  [severity]="achievement.unlocked ? 'success' : 'secondary'"
+                />
+              </div>
+              <p>{{ achievement.description }}</p>
+            </div>
+          </p-card>
+        }
+      </div>
+    </section>
+  }
+</section>

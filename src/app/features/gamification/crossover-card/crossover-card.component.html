@@ -1,0 +1,25 @@
+@if (profile().activeCrossover; as crossover) {
+  <p-card styleClass="crossover-card">
+    <div class="crossover-card__header">
+      <div class="crossover-card__icon">
+        <i [class]="crossover.event.icon"></i>
+      </div>
+      <div>
+        <p class="crossover-card__eyebrow">Active Crossover Event</p>
+        <h3>{{ crossover.event.name }}</h3>
+        <p>{{ crossover.event.tagline }}</p>
+      </div>
+    </div>
+
+    <div class="crossover-card__progress">
+      <div class="crossover-card__meta">
+        <span>Part {{ crossover.watchedCount }} of {{ crossover.total }}</span>
+        <span>{{ crossover.percent }}%</span>
+      </div>
+      <p-progressBar [value]="crossover.percent" [showValue]="false" />
+      @if (crossover.nextRow) {
+        <p class="crossover-card__next">Next required row: #{{ crossover.nextRow }}</p>
+      }
+    </div>
+  </p-card>
+}

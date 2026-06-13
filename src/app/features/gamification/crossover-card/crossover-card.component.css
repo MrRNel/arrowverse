@@ -1,0 +1,65 @@
+:host ::ng-deep .crossover-card {
+  background: linear-gradient(120deg, rgba(124, 58, 237, 0.12), rgba(0, 212, 255, 0.08)), var(--av-surface);
+  border: 1px solid rgba(124, 58, 237, 0.35);
+}
+
+:host ::ng-deep .crossover-card .p-card-body {
+  padding: 1rem 1.1rem;
+}
+
+.crossover-card__header {
+  align-items: center;
+  display: flex;
+  gap: 0.9rem;
+}
+
+.crossover-card__icon {
+  align-items: center;
+  background: rgba(124, 58, 237, 0.18);
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  border-radius: 0.9rem;
+  color: #c4b5fd;
+  display: flex;
+  font-size: 1.2rem;
+  height: 3rem;
+  justify-content: center;
+  width: 3rem;
+}
+
+.crossover-card__eyebrow {
+  color: #c4b5fd;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.crossover-card__header h3 {
+  color: var(--av-text);
+  margin: 0.15rem 0 0;
+}
+
+.crossover-card__header p {
+  color: var(--av-muted);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0;
+}
+
+.crossover-card__progress {
+  margin-top: 0.9rem;
+}
+
+.crossover-card__meta {
+  color: var(--av-muted);
+  display: flex;
+  font-size: 0.82rem;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+}
+
+.crossover-card__next {
+  color: var(--av-accent);
+  font-size: 0.82rem;
+  margin: 0.55rem 0 0;
+}

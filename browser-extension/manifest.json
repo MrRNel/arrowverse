@@ -1,0 +1,89 @@
+{
+  "manifest_version": 3,
+  "name": "Arrowverse Tracker Bridge",
+  "description": "Detect Arrowverse episodes on Netflix or Jellyfin and sync watch progress with the Arrowverse tracker app.",
+  "version": "1.0.11",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "notifications",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.netflix.com/*",
+    "http://localhost:8096/*",
+    "http://127.0.0.1:8096/*",
+    "http://jellyfin:8096/*",
+    "http://localhost:4200/*",
+    "https://arrowverse.example.com/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.netflix.com/*"
+      ],
+      "js": [
+        "lib/content-shared.js",
+        "content-netflix.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:8096/*",
+        "http://127.0.0.1:8096/*",
+        "http://jellyfin:8096/*"
+      ],
+      "js": [
+        "lib/content-shared.js",
+        "lib/uuid.js",
+        "lib/jellyfin-client.js",
+        "content-jellyfin.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:4200/*",
+        "https://arrowverse.example.com/*"
+      ],
+      "js": [
+        "content-app-bridge.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "options.html",
+  "action": {
+    "default_title": "Arrowverse Player Bridge",
+    "default_popup": "popup.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "data/watch-order.json"
+      ],
+      "matches": [
+        "https://www.netflix.com/*",
+        "http://localhost:8096/*",
+        "http://127.0.0.1:8096/*",
+        "http://jellyfin:8096/*",
+        "http://*/*",
+        "https://*/*"
+      ]
+    }
+  ]
+}

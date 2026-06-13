@@ -1,0 +1,38 @@
+@if (show(); as currentShow) {
+  <section class="page">
+    <header class="page__header">
+      <a routerLink="/series" class="back-link">
+        <i class="pi pi-arrow-left"></i>
+        All Series
+      </a>
+      <div class="show-hero">
+        <img [src]="currentShow.icon" [alt]="currentShow.name" class="show-hero__icon" />
+        <div>
+          <p class="page__eyebrow">Seasons</p>
+          <h1>{{ currentShow.name }}</h1>
+          <p class="page__subtitle">{{ showSeasons().length }} seasons in watch order data</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="season-grid">
+      @for (season of showSeasons(); track season.season) {
+        <a [routerLink]="['/series', showId(), 'season', season.season]" class="season-card-link">
+          <p-card styleClass="season-card">
+            <div class="season-card__top">
+              <img [src]="currentShow.icon" [alt]="currentShow.name" class="season-card__icon" />
+              <div>
+                <div class="season-card__label">Season {{ season.season }}</div>
+                <div class="season-card__count">{{ season.episodeCount }} episodes</div>
+              </div>
+            </div>
+            <p-progressBar [value]="progressPercent(season)" [showValue]="false" />
+            <div class="season-card__progress">
+              {{ season.watchedCount }}/{{ season.episodeCount }} watched
+            </div>
+          </p-card>
+        </a>
+      }
+    </div>
+  </section>
+}

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Arrowverse Extension Settings</title>
+    <link rel="stylesheet" href="lib/extension-ui.css" />
+  </head>
+  <body class="av-options">
+    <div class="av-scene av-scene--page">
+      <div class="av-grid"></div>
+      <div class="av-orb av-orb--cyan"></div>
+      <div class="av-orb av-orb--violet"></div>
+
+      <main class="av-card">
+        <div class="av-card__glow"></div>
+
+        <header class="av-header">
+          <div class="av-logo">AV</div>
+          <div>
+            <p class="av-kicker">Extension Configuration</p>
+            <h1>Bridge Settings</h1>
+            <p class="av-subtitle">
+              Match environment mode and URLs with your Angular
+              <code>environment.production.ts</code> settings.
+            </p>
+          </div>
+        </header>
+
+        <form class="av-form" id="options-form">
+          <div class="av-field">
+            <label for="mode">
+              Environment mode
+              <select id="mode">
+                <option value="development">Development (localhost)</option>
+                <option value="production">Production</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="av-field">
+            <label for="developmentAppUrl">
+              Development app URL
+              <input id="developmentAppUrl" type="url" value="http://localhost:4200" />
+            </label>
+          </div>
+
+          <div class="av-field">
+            <label for="productionAppUrl">
+              Production app URL
+              <input id="productionAppUrl" type="url" value="https://arrowverse.example.com" />
+            </label>
+          </div>
+
+          <div class="av-field">
+            <label for="jellyfinServerUrl">
+              Jellyfin server URL
+              <input id="jellyfinServerUrl" type="url" value="http://localhost:8096" placeholder="http://jellyfin:8096" />
+            </label>
+            <p class="av-tips" style="margin-top: -0.35rem">
+              Use the same hostname you open in the browser (e.g. <code>http://jellyfin:8096</code> or
+              <code>http://localhost:8096</code>). Local aliases are auto-detected on port 8096.
+            </p>
+          </div>
+
+          <div class="av-actions">
+            <button id="save" type="submit" class="av-btn av-btn--primary">Save settings</button>
+          </div>
+        </form>
+
+        <p id="status" class="av-save-status"></p>
+        <p class="av-footnote">Reload Netflix, Jellyfin, and your tracker tab after saving.</p>
+      </main>
+    </div>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>
