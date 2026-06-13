@@ -1,0 +1,65 @@
+<section class="page">
+  <header class="page__header">
+    <p class="page__eyebrow">Preferences</p>
+    <h1>Options</h1>
+    <p class="page__subtitle">
+      Playback settings are saved to your account and follow you across devices.
+    </p>
+  </header>
+
+  <div class="options-grid">
+    <p-card styleClass="options-card">
+      <div class="options-card__header">
+        <h2>Jellyfin</h2>
+        <p>Base URL used when a series is set to Jellyfin playback.</p>
+      </div>
+
+      <label class="options-field">
+        <span class="options-field__label">Server URL</span>
+        <input
+          type="url"
+          class="options-field__input"
+          [ngModel]="jellyfinDraft()"
+          (ngModelChange)="jellyfinDraft.set($event)"
+          (blur)="saveJellyfinUrl()"
+          [placeholder]="defaultJellyfinUrl"
+        />
+      </label>
+      <p class="options-field__hint">
+        Example: <code>{{ defaultJellyfinUrl }}</code> — episode links append
+        <code>?id=…</code> for direct playback.
+      </p>
+      @if (savingJellyfin()) {
+        <p class="options-field__status">Saving…</p>
+      }
+    </p-card>
+
+    <p-card styleClass="options-card">
+      <div class="options-card__header">
+        <h2>Series playback sources</h2>
+        <p>Choose where Play buttons open for each show.</p>
+      </div>
+
+      <ul class="series-sources">
+        @let sources = settings.seriesSources();
+        @for (show of shows; track show.id) {
+          <li class="series-sources__row">
+            <div class="series-sources__show">
+              <img [src]="show.icon" [alt]="show.name" class="series-sources__icon" loading="lazy" />
+              <span>{{ show.name }}</span>
+            </div>
+            <p-select
+              [options]="sourceOptions"
+              [ngModel]="sources.get(show.id) ?? 'jellyfin'"
+              (ngModelChange)="onSeriesSourceChange(show.id, $event)"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="series-sources__select"
+              size="small"
+            />
+          </li>
+        }
+      </ul>
+    </p-card>
+  </div>
+</section>

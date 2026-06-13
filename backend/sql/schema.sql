@@ -87,6 +87,16 @@ CREATE TABLE IF NOT EXISTS watched_episodes (
 -- Existing databases: run once if the status column is missing
 -- ALTER TABLE watched_episodes ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'watched' AFTER source;
 
+CREATE TABLE IF NOT EXISTS user_settings (
+  user_id BIGINT NOT NULL,
+  setting_key VARCHAR(64) NOT NULL,
+  setting_value TEXT NOT NULL,
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (user_id, setting_key),
+  CONSTRAINT fk_user_settings_user_id
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS user_gamification_meta (
   user_id BIGINT NOT NULL,
   best_streak INT NOT NULL DEFAULT 0,

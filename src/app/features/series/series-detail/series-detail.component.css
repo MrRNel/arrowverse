@@ -103,3 +103,31 @@
   color: var(--av-muted);
   margin: 0.5rem 0 0;
 }
+
+.series-playback {
+  background: var(--av-surface);
+  border: 1px solid var(--av-border);
+  border-radius: 0.75rem;
+  margin-top: 1.25rem;
+  max-width: 28rem;
+  padding: 1rem 1.1rem;
+}
+
+.series-playback__label {
+  color: var(--av-text);
+  display: flex;
+  flex-direction: column;
+  font-size: 0.88rem;
+  font-weight: 600;
+  gap: 0.45rem;
+}
+
+.series-playback__hint {
+  color: var(--av-muted);
+  font-size: 0.82rem;
+  margin: 0.65rem 0 0;
+}
+
+:host ::ng-deep .series-playback__select {
+  width: 100%;
+}

@@ -42,6 +42,26 @@ MIGRATIONS: list[tuple[str, str, str]] = [
         ADD COLUMN play_item_id VARCHAR(64) NULL AFTER source
         """,
     ),
+    (
+        'user_settings',
+        """
+        SELECT COUNT(*) AS cnt
+        FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'user_settings'
+        """,
+        """
+        CREATE TABLE user_settings (
+          user_id BIGINT NOT NULL,
+          setting_key VARCHAR(64) NOT NULL,
+          setting_value TEXT NOT NULL,
+          updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+          PRIMARY KEY (user_id, setting_key),
+          CONSTRAINT fk_user_settings_user_id
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+    ),
 ]
 
 

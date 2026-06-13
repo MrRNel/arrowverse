@@ -7,6 +7,7 @@ import { SeasonDetailComponent } from './features/series/season-detail/season-de
 import { SeriesDetailComponent } from './features/series/series-detail/series-detail.component';
 import { SeriesListComponent } from './features/series/series-list/series-list.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
+import { OptionsComponent } from './features/options/options.component';
 import { WatchOrderComponent } from './features/watch-order/watch-order.component';
 import { ShellComponent } from './layout/shell/shell.component';
 
@@ -28,6 +29,7 @@ export const routes: Routes = [
       { path: 'series', component: SeriesListComponent },
       { path: 'series/:showId', component: SeriesDetailComponent },
       { path: 'series/:showId/season/:season', component: SeasonDetailComponent },
+      { path: 'options', component: OptionsComponent },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

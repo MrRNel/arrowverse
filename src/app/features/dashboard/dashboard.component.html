@@ -96,7 +96,15 @@
             Install the browser extension for automatic episode detection
           }
         </p>
-        @if (extensionLastEvent(); as event) {
+        @if (currentlyPlaying(); as episode) {
+          <div class="bridge-card__now-watching">
+            <div class="bridge-card__now-watching-label">Currently watching</div>
+            <div class="bridge-card__now-watching-title">{{ episode.series }}</div>
+            <div class="bridge-card__now-watching-meta">
+              #{{ episode.row_number }} · {{ episode.episode_id }} · {{ episode.episode_name }}
+            </div>
+          </div>
+        } @else if (extensionLastEvent(); as event) {
           <p class="bridge-card__event">{{ event }}</p>
         }
       </p-card>

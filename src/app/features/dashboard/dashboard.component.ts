@@ -11,7 +11,6 @@ import { AchievementState } from '../../core/models/gamification.model';
 import { ArrowverseEpisode } from '../../core/models/episode.model';
 import { EpisodePlaybackService } from '../../core/services/episode-playback.service';
 import { EpisodeService } from '../../core/services/episode.service';
-import { PlaybackPreferencesService } from '../../core/services/playback-preferences.service';
 import { ExtensionBridgeService } from '../../core/services/extension-bridge.service';
 import { GamificationService } from '../../core/services/gamification.service';
 import { WatchProgressService } from '../../core/services/watch-progress.service';
@@ -49,7 +48,6 @@ interface ShowProgress {
 export class DashboardComponent {
   private readonly episodeService = inject(EpisodeService);
   private readonly playback = inject(EpisodePlaybackService);
-  readonly playbackPreferences = inject(PlaybackPreferencesService);
   private readonly progressService = inject(WatchProgressService);
   private readonly gamification = inject(GamificationService);
   private readonly extensionBridge = inject(ExtensionBridgeService);
@@ -58,6 +56,7 @@ export class DashboardComponent {
   readonly extensionConnected = this.extensionBridge.connected;
   readonly extensionSyncWarning = this.extensionBridge.syncWarning;
   readonly extensionLastEvent = this.extensionBridge.lastEvent;
+  readonly currentlyPlaying = this.extensionBridge.currentlyPlaying;
 
   private readonly stats = toSignal(
     toObservable(this.progressService.watched).pipe(

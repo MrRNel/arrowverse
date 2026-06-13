@@ -25,3 +25,4 @@ class User(Base):
     watched_episodes = relationship("WatchedEpisode", back_populates="user", cascade="all, delete-orphan")
     refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
     gamification_meta = relationship("UserGamificationMeta", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    settings = relationship("UserSetting", back_populates="user", cascade="all, delete-orphan")

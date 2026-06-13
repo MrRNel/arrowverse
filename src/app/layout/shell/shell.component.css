@@ -268,6 +268,55 @@
   margin-top: 0.45rem;
 }
 
+.shell__now-watching {
+  background: rgba(0, 212, 255, 0.06);
+  border: 1px solid rgba(0, 212, 255, 0.22);
+  border-radius: 0.7rem;
+  margin-top: 0.65rem;
+  padding: 0.7rem;
+}
+
+.shell__now-watching-label {
+  color: var(--av-accent);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.shell__now-watching-body {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.65rem;
+}
+
+.shell__now-watching-icon {
+  flex-shrink: 0;
+  height: 2.4rem;
+  object-fit: contain;
+  width: 2.4rem;
+}
+
+.shell__now-watching-series {
+  color: var(--av-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.shell__now-watching-title {
+  color: var(--av-text);
+  font-size: 0.76rem;
+  line-height: 1.35;
+  margin-top: 0.15rem;
+}
+
+.shell__now-watching-meta {
+  color: var(--av-muted);
+  font-size: 0.68rem;
+  margin-top: 0.25rem;
+}
+
 .shell__playback-label {
   color: var(--av-muted);
   display: block;

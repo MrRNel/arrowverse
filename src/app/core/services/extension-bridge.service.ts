@@ -33,12 +33,14 @@ export class ExtensionBridgeService {
 
   private readonly connectedSignal = signal(false);
   private readonly lastEventSignal = signal<string | null>(null);
+  private readonly currentlyPlayingSignal = signal<ExtensionEpisodePayload | null>(null);
   private readonly syncWarningSignal = signal<ExtensionSyncWarningState | null>(null);
   private initialized = false;
   private messageChain: Promise<void> = Promise.resolve();
 
   readonly connected = this.connectedSignal.asReadonly();
   readonly lastEvent = this.lastEventSignal.asReadonly();
+  readonly currentlyPlaying = this.currentlyPlayingSignal.asReadonly();
   readonly syncWarning = this.syncWarningSignal.asReadonly();
 
   init(): void {
@@ -137,6 +139,7 @@ export class ExtensionBridgeService {
     }
 
     await this.progressService.setStatus(episode.row_number, 'partial', episode.provider ?? 'extension', episode.play_item_id);
+    this.setCurrentlyPlaying(episode);
     this.lastEventSignal.set(
       `${episode.series} · ${episode.episode_id} · in progress`,
     );
@@ -160,6 +163,7 @@ export class ExtensionBridgeService {
     await this.gamificationService.handleWatchChange(episode.row_number, true);
 
     this.syncWarningSignal.set(null);
+    this.currentlyPlayingSignal.set(null);
 
     this.lastEventSignal.set(
       `${episode.series} · ${episode.episode_id} · ${episode.episode_name}`,
@@ -187,6 +191,7 @@ export class ExtensionBridgeService {
       );
     }
 
+    this.setCurrentlyPlaying(episode);
     this.lastEventSignal.set(
       `${episode.series} · ${episode.episode_id} · in progress`,
     );
@@ -328,6 +333,10 @@ export class ExtensionBridgeService {
       episode_name: episode.episode_name,
       air_date: episode.air_date,
     };
+  }
+
+  private setCurrentlyPlaying(episode: ExtensionEpisodePayload): void {
+    this.currentlyPlayingSignal.set(episode);
   }
 
   private postToExtension(

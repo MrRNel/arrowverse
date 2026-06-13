@@ -7,64 +7,64 @@ import {
   jellyfinVideoUrl,
   netflixSearchUrl,
   netflixWatchUrl,
-  normalizeWatchSource,
   playbackSearchQuery,
-  WatchSource,
+  SeriesPlaybackSource,
 } from '../models/playback.model';
-import { PlaybackPreferencesService } from './playback-preferences.service';
+import { getShowId } from '../utils/episode.utils';
+import { UserSettingsService } from './user-settings.service';
 import { WatchProgressService } from './watch-progress.service';
 
 @Injectable({ providedIn: 'root' })
 export class EpisodePlaybackService {
-  private readonly preferences = inject(PlaybackPreferencesService);
+  private readonly settings = inject(UserSettingsService);
   private readonly progressService = inject(WatchProgressService);
 
   buildLink(
     episode: EpisodePlaybackMeta,
-    preferredSource?: WatchSource | null,
+    preferredSource?: SeriesPlaybackSource | null,
   ): EpisodePlaybackLink {
-    const storedSource = this.progressService.getSource(episode.rowNumber);
+    const showId = getShowId(episode.series);
+    const seriesSource = preferredSource ?? this.settings.getSeriesSource(showId);
     const playItemId = this.progressService.getPlayItemId(episode.rowNumber);
-    const source = preferredSource ?? storedSource ?? 'jellyfin';
     const query = playbackSearchQuery(episode);
 
-    if (source === 'jellyfin' || source === 'manual' || source === 'extension') {
-      if (playItemId && (storedSource === 'jellyfin' || source === 'jellyfin')) {
+    if (seriesSource === 'netflix') {
+      if (playItemId) {
         return {
-          url: jellyfinVideoUrl(this.preferences.jellyfinUrl(), playItemId),
-          label: 'Play on Jellyfin',
-          provider: 'jellyfin',
+          url: netflixWatchUrl(playItemId),
+          label: 'Play on Netflix',
+          provider: 'netflix',
         };
       }
 
       return {
-        url: jellyfinSearchUrl(this.preferences.jellyfinUrl(), query),
-        label: 'Open in Jellyfin',
+        url: netflixSearchUrl(query),
+        label: 'Open on Netflix',
         provider: 'search',
       };
     }
 
-    if (playItemId && storedSource === 'netflix') {
+    if (playItemId) {
       return {
-        url: netflixWatchUrl(playItemId),
-        label: 'Play on Netflix',
-        provider: 'netflix',
+        url: jellyfinVideoUrl(this.settings.jellyfinUrl(), playItemId),
+        label: 'Play on Jellyfin',
+        provider: 'jellyfin',
       };
     }
 
     return {
-      url: netflixSearchUrl(query),
-      label: 'Open on Netflix',
+      url: jellyfinSearchUrl(this.settings.jellyfinUrl(), query),
+      label: 'Open in Jellyfin',
       provider: 'search',
     };
   }
 
-  openEpisode(episode: EpisodePlaybackMeta, preferredSource?: WatchSource | null): void {
+  openEpisode(episode: EpisodePlaybackMeta, preferredSource?: SeriesPlaybackSource | null): void {
     const link = this.buildLink(episode, preferredSource);
     window.open(link.url, '_blank', 'noopener,noreferrer');
   }
 
-  sourceForRow(rowNumber: number): WatchSource {
-    return normalizeWatchSource(this.progressService.getSource(rowNumber));
+  sourceForSeries(seriesName: string): SeriesPlaybackSource {
+    return this.settings.getSeriesSource(getShowId(seriesName));
   }
 }

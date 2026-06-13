@@ -13,6 +13,25 @@
           <p class="page__subtitle">{{ showSeasons().length }} seasons in watch order data</p>
         </div>
       </div>
+
+      <div class="series-playback">
+        <label class="series-playback__label">
+          Playback source
+          <p-select
+            [options]="sourceOptions"
+            [ngModel]="playbackSource()"
+            (ngModelChange)="onSourceChange($event)"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="series-playback__select"
+            size="small"
+          />
+        </label>
+        <p class="series-playback__hint">
+          Play buttons for this series open
+          {{ playbackSource() === 'netflix' ? 'Netflix' : 'Jellyfin' }}.
+        </p>
+      </div>
     </header>
 
     <div class="season-grid">

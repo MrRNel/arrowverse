@@ -1,5 +1,6 @@
 from app.models.auth import AuthorizationCode, RefreshToken
 from app.models.progress import UserGamificationMeta, WatchedEpisode
+from app.models.settings import UserSetting
 from app.models.user import User
 
 __all__ = [
@@ -8,4 +9,5 @@ __all__ = [
     "RefreshToken",
     "WatchedEpisode",
     "UserGamificationMeta",
+    "UserSetting",
 ]

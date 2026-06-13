@@ -32,9 +32,6 @@
             <p-tag [value]="episode.series" />
             <span>{{ formatCode(episode.episode_id) }}</span>
             <span>{{ episode.air_date }}</span>
-            @if (episodeStatus(episode.row_number) !== 'unwatched') {
-              <p-tag [value]="sourceLabel(episode.row_number)" severity="secondary" />
-            }
           </div>
         </div>
 
@@ -51,19 +48,6 @@
             <i class="pi pi-play" aria-hidden="true"></i>
             {{ playLabel(episode) }}
           </button>
-
-          @if (showSourceEditor() && episodeStatus(episode.row_number) !== 'unwatched') {
-            <p-select
-              [options]="sourceOptions"
-              [ngModel]="episodeSource(episode.row_number)"
-              (ngModelChange)="onSourceChange(episode.row_number, $event)"
-              optionLabel="label"
-              optionValue="value"
-              styleClass="episode-source-select"
-              size="small"
-              placeholder="Source"
-            />
-          }
 
           <p-selectbutton
             [options]="statusOptions"

@@ -3,13 +3,11 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TagModule } from 'primeng/tag';
 
 import { SHOW_BY_NAME } from '../../core/data/shows.data';
 import { ArrowverseEpisode } from '../../core/models/episode.model';
-import { WATCH_SOURCE_OPTIONS, watchSourceLabel, WatchSource } from '../../core/models/playback.model';
 import { EpisodePlaybackService } from '../../core/services/episode-playback.service';
 import { EpisodeService } from '../../core/services/episode.service';
 import { GamificationService } from '../../core/services/gamification.service';
@@ -21,7 +19,7 @@ import { formatEpisodeCode } from '../../core/utils/episode.utils';
 
 @Component({
   selector: 'app-episode-list',
-  imports: [ButtonModule, SelectModule, SelectButtonModule, TagModule, FormsModule],
+  imports: [ButtonModule, SelectButtonModule, TagModule, FormsModule],
   templateUrl: './episode-list.component.html',
   styleUrl: './episode-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,15 +33,12 @@ export class EpisodeListComponent {
   readonly showId = input<string | null>(null);
   readonly season = input<number | null>(null);
   readonly title = input('Watch Order');
-  readonly showSourceEditor = input(false);
 
   readonly statusOptions: { label: string; value: EpisodeWatchStatus; icon: string }[] = [
     { label: 'Unwatched', value: 'unwatched', icon: 'pi pi-circle' },
     { label: 'In progress', value: 'partial', icon: 'pi pi-hourglass' },
     { label: 'Finished', value: 'watched', icon: 'pi pi-check' },
   ];
-
-  readonly sourceOptions = WATCH_SOURCE_OPTIONS;
 
   private readonly listFilter = computed(() => ({
     showId: this.showId(),
@@ -75,14 +70,6 @@ export class EpisodeListComponent {
     return this.progressService.getStatus(rowNumber);
   }
 
-  episodeSource(rowNumber: number): WatchSource {
-    return this.progressService.getSource(rowNumber);
-  }
-
-  sourceLabel(rowNumber: number): string {
-    return watchSourceLabel(this.episodeSource(rowNumber));
-  }
-
   playLabel(episode: ArrowverseEpisode): string {
     return this.playback.buildLink(this.toPlaybackMeta(episode)).label;
   }
@@ -102,19 +89,11 @@ export class EpisodeListComponent {
       return;
     }
 
-    await this.progressService.setStatus(
-      rowNumber,
-      nextStatus,
-      nextStatus === 'unwatched' ? 'manual' : this.progressService.getSource(rowNumber),
-    );
+    await this.progressService.setStatus(rowNumber, nextStatus, 'manual');
 
     if (nextStatus === 'watched' && previousStatus !== 'watched') {
       await this.gamification.handleWatchChange(rowNumber, true);
     }
-  }
-
-  async onSourceChange(rowNumber: number, source: WatchSource): Promise<void> {
-    await this.progressService.setSource(rowNumber, source);
   }
 
   openEpisode(episode: ArrowverseEpisode): void {

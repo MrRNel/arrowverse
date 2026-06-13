@@ -66,21 +66,31 @@
             {{ warning.upNext.episode_name }}
           </div>
         </div>
+      } @else if (currentlyPlaying(); as episode) {
+        <div class="shell__now-watching">
+          <div class="shell__now-watching-label">Currently watching</div>
+          <div class="shell__now-watching-body">
+            <img
+              [src]="iconFor(episode.series)"
+              [alt]="episode.series"
+              class="shell__now-watching-icon"
+              loading="lazy"
+            />
+            <div>
+              <div class="shell__now-watching-series">{{ episode.series }}</div>
+              <div class="shell__now-watching-title">{{ episode.episode_name }}</div>
+              <div class="shell__now-watching-meta">
+                #{{ episode.row_number }} · {{ formatCode(episode.episode_id) }}
+                @if (episode.provider) {
+                  · {{ providerLabel(episode.provider) }}
+                }
+              </div>
+            </div>
+          </div>
+        </div>
       } @else if (extensionLastEvent()) {
         <div class="shell__extension-event">{{ extensionLastEvent() }}</div>
       }
-
-      <label class="shell__playback-label">
-        Jellyfin server URL
-        <input
-          type="url"
-          class="shell__playback-input"
-          [ngModel]="playbackPreferences.jellyfinUrl()"
-          (ngModelChange)="updateJellyfinUrl($event)"
-          placeholder="http://localhost:8096"
-        />
-      </label>
-      <p class="shell__playback-hint">Used for Play on Jellyfin links in the app.</p>
     </div>
 
     <div class="shell__footer">
