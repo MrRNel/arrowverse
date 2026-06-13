@@ -9,11 +9,12 @@ RUN npm ci --legacy-peer-deps
 
 COPY . .
 
-ARG APP_URL=https://arrowverse.example.com
+ARG APP_URL=https://arrowverse.forgenetics.co.za
 ENV APP_URL=${APP_URL}
 
 RUN node scripts/inject-app-url.mjs
-RUN npm run build -- --configuration production
+# Skip npm prebuild hooks (icons/sync) — assets are committed; image only needs the SPA build.
+RUN npx ng build --configuration production
 
 FROM python:3.12-slim-bookworm AS runtime
 
