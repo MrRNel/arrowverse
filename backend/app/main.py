@@ -2,7 +2,8 @@ from pathlib import Path
 
 from app.config import get_settings
 from app.database import Base, engine
-from app.routers import auth, progress, settings
+from app.routers import auth, progress
+from app.routers import settings as user_settings_router
 from fastapi import FastAPI, Request
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -67,7 +68,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth.router, prefix="/api")
     app.include_router(progress.router, prefix="/api")
-    app.include_router(settings.router, prefix="/api")
+    app.include_router(user_settings_router.router, prefix="/api")
 
     @app.get("/api/health")
     async def health() -> dict[str, str]:
