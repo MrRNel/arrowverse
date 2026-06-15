@@ -5,7 +5,14 @@ export type ExtensionEventType =
   | 'SYNC_PENDING'
   | 'PING';
 
-export type ExtensionAppEventType = 'PONG' | 'ACK' | 'ERROR' | 'SYNC_STATE' | 'SYNC_WARNING' | 'AUTH_STATE';
+export type ExtensionAppEventType =
+  | 'PONG'
+  | 'ACK'
+  | 'ERROR'
+  | 'SYNC_STATE'
+  | 'SYNC_WARNING'
+  | 'AUTH_STATE'
+  | 'USER_SETTINGS';
 
 export interface ExtensionEpisodePayload {
   row_number: number;
@@ -48,7 +55,10 @@ export interface ExtensionSyncWarningMessage {
 
 export interface ExtensionBridgeResponse {
   source: 'arrowverse-app';
-  type: Exclude<ExtensionAppEventType, 'SYNC_STATE' | 'SYNC_WARNING' | 'AUTH_STATE'>;
+  type: Exclude<
+    ExtensionAppEventType,
+    'SYNC_STATE' | 'SYNC_WARNING' | 'AUTH_STATE' | 'USER_SETTINGS'
+  >;
   message?: string;
 }
 
@@ -66,8 +76,16 @@ export interface ExtensionAuthStateMessage {
   } | null;
 }
 
+export interface ExtensionUserSettingsMessage {
+  source: 'arrowverse-app';
+  type: 'USER_SETTINGS';
+  jellyfin_url: string;
+  jellyfin_hosts: string[];
+}
+
 export type ExtensionAppMessage =
   | ExtensionBridgeResponse
   | ExtensionSyncStateMessage
   | ExtensionSyncWarningMessage
-  | ExtensionAuthStateMessage;
+  | ExtensionAuthStateMessage
+  | ExtensionUserSettingsMessage;

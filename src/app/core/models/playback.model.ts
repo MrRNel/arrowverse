@@ -3,6 +3,7 @@ export type WatchSource = 'manual' | 'jellyfin' | 'netflix' | 'extension';
 export type SeriesPlaybackSource = 'jellyfin' | 'netflix';
 
 export const DEFAULT_JELLYFIN_URL = 'http://jellyfin:8096/web/#/video';
+export const DEFAULT_JELLYFIN_HOSTS = ['localhost', '127.0.0.1', 'jellyfin'] as const;
 
 export interface WatchSourceOption {
   label: string;

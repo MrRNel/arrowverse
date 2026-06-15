@@ -1,4 +1,47 @@
-export const LOCAL_JELLYFIN_HOSTS = ['localhost', '127.0.0.1', 'jellyfin'];
+export const DEFAULT_JELLYFIN_HOSTS = ['localhost', '127.0.0.1', 'jellyfin'];
+
+function normalizeHost(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const host = new URL(trimmed).hostname;
+      return host ? host.toLowerCase() : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return trimmed.replace(/^\[|\]$/g, '').toLowerCase();
+}
+
+export function getJellyfinHosts(config) {
+  const configuredHosts = (config?.jellyfinHosts ?? [])
+    .map((entry) => normalizeHost(entry))
+    .filter(Boolean);
+  const hosts = new Set(configuredHosts.length ? configuredHosts : DEFAULT_JELLYFIN_HOSTS);
+
+  const configured = config?.jellyfinServerUrl?.trim();
+  if (configured) {
+    try {
+      const host = new URL(configured).hostname;
+      if (host) {
+        hosts.add(host.toLowerCase());
+      }
+    } catch {
+      // Ignore invalid configured URL.
+    }
+  }
+
+  return [...hosts];
+}
 
 export function getJellyfinPort(config) {
   const configured = config?.jellyfinServerUrl?.trim();
@@ -15,7 +58,7 @@ export function getJellyfinPort(config) {
 
 export function getJellyfinMatchOrigins(config) {
   const port = getJellyfinPort(config);
-  const origins = new Set(LOCAL_JELLYFIN_HOSTS.map((host) => `http://${host}:${port}`));
+  const origins = new Set(getJellyfinHosts(config).map((host) => `http://${host}:${port}`));
 
   const configured = config?.jellyfinServerUrl?.trim();
   if (configured) {

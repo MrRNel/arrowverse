@@ -1,6 +1,11 @@
 import { EXTENSION_CONFIG, getAppUrl, isAppUrl } from './lib/config.js';
 import { getJellyfinMatchPatterns, getJellyfinOrigin } from './lib/jellyfin-url.js';
-import { markEpisodeOnApi, saveAuthState, setEpisodeStatusOnApi } from './lib/api-client.js';
+import {
+  fetchUserSettings,
+  markEpisodeOnApi,
+  saveAuthState,
+  setEpisodeStatusOnApi,
+} from './lib/api-client.js';
 import { EpisodeMatcher } from './lib/episode-matcher.js';
 
 const matcherUrl = chrome.runtime.getURL('data/watch-order.json');
@@ -80,12 +85,83 @@ async function loadConfig() {
     'developmentAppUrl',
     'productionAppUrl',
     'jellyfinServerUrl',
+    'jellyfinHosts',
   ]);
   config = {
     ...EXTENSION_CONFIG,
     ...stored,
   };
   return config;
+}
+
+function jellyfinOriginFromProfileUrl(jellyfinUrl) {
+  if (!jellyfinUrl || typeof jellyfinUrl !== 'string') {
+    return null;
+  }
+
+  try {
+    return new URL(jellyfinUrl.trim()).origin;
+  } catch {
+    return null;
+  }
+}
+
+async function applyUserSettings(data) {
+  const updates = {};
+
+  const hosts = Array.isArray(data?.jellyfin_hosts)
+    ? data.jellyfin_hosts.filter((entry) => typeof entry === 'string')
+    : [];
+  if (hosts.length) {
+    updates.jellyfinHosts = hosts;
+  }
+
+  const origin = jellyfinOriginFromProfileUrl(data?.jellyfin_url);
+  if (origin) {
+    updates.jellyfinServerUrl = origin;
+  }
+
+  if (!Object.keys(updates).length) {
+    return false;
+  }
+
+  await chrome.storage.sync.set(updates);
+  config = {
+    ...config,
+    ...updates,
+  };
+  scheduleDynamicContentScripts();
+  return true;
+}
+
+async function clearProfileSettings() {
+  await chrome.storage.sync.remove(['jellyfinHosts', 'jellyfinServerUrl']);
+  config = {
+    ...config,
+    jellyfinHosts: undefined,
+    jellyfinServerUrl: EXTENSION_CONFIG.jellyfinServerUrl,
+  };
+  scheduleDynamicContentScripts();
+}
+
+async function syncProfileSettings() {
+  const activeConfig = await loadConfig();
+  const result = await fetchUserSettings(activeConfig);
+  if (!result.ok) {
+    return result;
+  }
+
+  await applyUserSettings(result.settings);
+  return { ok: true };
+}
+
+async function bootstrapExtension() {
+  await loadConfig();
+  await ensureMatcher();
+  const syncResult = await syncProfileSettings();
+  if (!syncResult.ok) {
+    scheduleDynamicContentScripts();
+  }
 }
 
 async function getAppBridgePatterns() {
@@ -342,16 +418,12 @@ async function injectPlayerMonitor(tabId, provider) {
   });
 }
 
-chrome.runtime.onInstalled.addListener(async () => {
-  await loadConfig();
-  await ensureMatcher();
-  scheduleDynamicContentScripts();
+chrome.runtime.onInstalled.addListener(() => {
+  void bootstrapExtension();
 });
 
-chrome.runtime.onStartup.addListener(async () => {
-  await loadConfig();
-  await ensureMatcher();
-  scheduleDynamicContentScripts();
+chrome.runtime.onStartup.addListener(() => {
+  void bootstrapExtension();
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -382,16 +454,18 @@ async function handleMessage(message, sender) {
   if (message.type === 'APP_RESPONSE') {
     const data = message.data;
     if (data?.type === 'AUTH_STATE') {
-      await saveAuthState(
-        data.refreshToken || data.accessToken
-          ? {
-              accessToken: data.accessToken ?? null,
-              refreshToken: data.refreshToken ?? null,
-              expiresAt: data.expiresAt ?? null,
-              user: data.user ?? null,
-            }
-          : null,
-      );
+      if (data.refreshToken || data.accessToken) {
+        await saveAuthState({
+          accessToken: data.accessToken ?? null,
+          refreshToken: data.refreshToken ?? null,
+          expiresAt: data.expiresAt ?? null,
+          user: data.user ?? null,
+        });
+        void syncProfileSettings();
+      } else {
+        await saveAuthState(null);
+        await clearProfileSettings();
+      }
       return { ok: true };
     }
 
@@ -402,6 +476,11 @@ async function handleMessage(message, sender) {
 
     if (data?.type === 'SYNC_WARNING') {
       await showOutOfSyncWarning(data);
+      return { ok: true };
+    }
+
+    if (data?.type === 'USER_SETTINGS') {
+      await applyUserSettings(data);
       return { ok: true };
     }
 
@@ -511,6 +590,8 @@ async function handleMessage(message, sender) {
   }
 
   if (message.type === 'APP_READY' && sender.tab?.id) {
+    void syncProfileSettings();
+
     const pending = (await chrome.storage.local.get('pendingEvents')).pendingEvents ?? [];
     if (!pending.length) {
       return { synced: 0 };

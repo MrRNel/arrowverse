@@ -48,6 +48,11 @@
   width: 100%;
 }
 
+.options-field__textarea {
+  min-height: 6.5rem;
+  resize: vertical;
+}
+
 .options-field__input:focus {
   border-color: rgba(0, 212, 255, 0.45);
   outline: none;

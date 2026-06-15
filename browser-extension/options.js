@@ -1,7 +1,6 @@
 const modeInput = document.querySelector('#mode');
 const developmentInput = document.querySelector('#developmentAppUrl');
 const productionInput = document.querySelector('#productionAppUrl');
-const jellyfinInput = document.querySelector('#jellyfinServerUrl');
 const status = document.querySelector('#status');
 const form = document.querySelector('#options-form');
 
@@ -10,13 +9,11 @@ async function load() {
     'mode',
     'developmentAppUrl',
     'productionAppUrl',
-    'jellyfinServerUrl',
   ]);
 
   modeInput.value = stored.mode ?? 'development';
   developmentInput.value = stored.developmentAppUrl ?? 'http://localhost:4200';
   productionInput.value = stored.productionAppUrl ?? 'https://arrowverse.example.com';
-  jellyfinInput.value = stored.jellyfinServerUrl ?? 'http://localhost:8096';
 }
 
 form.addEventListener('submit', async (event) => {
@@ -32,7 +29,6 @@ form.addEventListener('submit', async (event) => {
       mode: modeInput.value,
       developmentAppUrl: developmentInput.value.trim(),
       productionAppUrl: productionInput.value.trim(),
-      jellyfinServerUrl: jellyfinInput.value.trim(),
     };
 
     for (const url of [config.developmentAppUrl, config.productionAppUrl]) {

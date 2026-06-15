@@ -96,4 +96,30 @@ export async function markEpisodeOnApi(config, episode) {
   return setEpisodeStatusOnApi(config, episode, 'watched');
 }
 
+export async function fetchUserSettings(config) {
+  const accessToken = await ensureAccessToken(config);
+  if (!accessToken) {
+    return { ok: false, reason: 'not-authenticated' };
+  }
+
+  const response = await fetch(`${getApiUrl(config)}/users/me/settings`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/json',
+    },
+  });
+
+  if (response.status === 401) {
+    await saveAuthState(null);
+    return { ok: false, reason: 'unauthorized' };
+  }
+
+  if (!response.ok) {
+    return { ok: false, reason: `status-${response.status}` };
+  }
+
+  const settings = await response.json();
+  return { ok: true, settings };
+}
+
 export { getAppUrl, isAppUrl };

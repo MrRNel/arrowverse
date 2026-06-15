@@ -11,11 +11,13 @@ import {
   ExtensionSyncStateMessage,
   ExtensionSyncWarningMessage,
   ExtensionSyncWarningState,
+  ExtensionUserSettingsMessage,
 } from '../models/extension-bridge.model';
 import { ArrowverseEpisode } from '../models/episode.model';
 import { AuthService } from './auth.service';
 import { EpisodeService } from './episode.service';
 import { GamificationService } from './gamification.service';
+import { UserSettingsService } from './user-settings.service';
 import { WatchProgressService } from './watch-progress.service';
 
 const BRIDGE_SOURCE = 'arrowverse-extension';
@@ -28,6 +30,7 @@ export class ExtensionBridgeService {
   private readonly progressService = inject(WatchProgressService);
   private readonly episodeService = inject(EpisodeService);
   private readonly gamificationService = inject(GamificationService);
+  private readonly settingsService = inject(UserSettingsService);
   private readonly messages = inject(MessageService);
   private readonly ngZone = inject(NgZone);
 
@@ -77,10 +80,20 @@ export class ExtensionBridgeService {
     void this.bootstrapBridge();
   }
 
+  syncUserSettings(): void {
+    if (!this.initialized || !environment.extensionBridgeEnabled) {
+      return;
+    }
+
+    this.publishUserSettings();
+  }
+
   private async bootstrapBridge(): Promise<void> {
     await this.auth.init();
     await this.progressService.init();
+    await this.settingsService.init();
     await this.publishAuthState();
+    this.publishUserSettings();
     this.publishSyncState();
     this.postToExtension({ source: APP_SOURCE, type: 'PONG' });
   }
@@ -93,6 +106,7 @@ export class ExtensionBridgeService {
       case 'PING':
         this.postToExtension({ source: APP_SOURCE, type: 'PONG' });
         await this.publishAuthState();
+        this.publishUserSettings();
         this.publishSyncState();
         break;
 
@@ -283,6 +297,16 @@ export class ExtensionBridgeService {
       });
   }
 
+  private publishUserSettings(): void {
+    const message: ExtensionUserSettingsMessage = {
+      source: APP_SOURCE,
+      type: 'USER_SETTINGS',
+      jellyfin_url: this.settingsService.jellyfinUrl(),
+      jellyfin_hosts: [...this.settingsService.jellyfinHosts()],
+    };
+    this.postToExtension(message);
+  }
+
   private async publishAuthState(): Promise<void> {
     if (!this.auth.isAuthenticated()) {
       this.postAuthState(null, null, null, null);
@@ -344,7 +368,8 @@ export class ExtensionBridgeService {
       | ExtensionBridgeResponse
       | ExtensionSyncStateMessage
       | ExtensionSyncWarningMessage
-      | ExtensionAuthStateMessage,
+      | ExtensionAuthStateMessage
+      | ExtensionUserSettingsMessage,
   ): void {
     window.postMessage(message, window.location.origin);
   }

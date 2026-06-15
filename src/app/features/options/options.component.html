@@ -32,6 +32,26 @@
       @if (savingJellyfin()) {
         <p class="options-field__status">Saving…</p>
       }
+
+      <label class="options-field">
+        <span class="options-field__label">Valid Jellyfin hosts</span>
+        <textarea
+          class="options-field__input options-field__textarea"
+          rows="4"
+          [ngModel]="jellyfinHostsDraft()"
+          (ngModelChange)="jellyfinHostsDraft.set($event)"
+          (blur)="saveJellyfinHosts()"
+          [placeholder]="defaultJellyfinHostsPlaceholder"
+        ></textarea>
+      </label>
+      <p class="options-field__hint">
+        One hostname or IP per line. Saved to your account — the browser extension syncs this list
+        from your profile to detect Jellyfin tabs (default:
+        <code>{{ defaultJellyfinHosts.join(', ') }}</code>).
+      </p>
+      @if (savingJellyfinHosts()) {
+        <p class="options-field__status">Saving…</p>
+      }
     </p-card>
 
     <p-card styleClass="options-card">
