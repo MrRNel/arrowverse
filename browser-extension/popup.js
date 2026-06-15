@@ -1,4 +1,21 @@
 import { isJellyfinTabUrl } from './lib/jellyfin-url.js';
+import { getJellyfinPermissionStatus, requestJellyfinPermissions } from './lib/jellyfin-permissions.js';
+import { EXTENSION_CONFIG } from './lib/config.js';
+
+function trackerAppUrls(config) {
+  return [config.productionAppUrl, config.developmentAppUrl].filter(Boolean);
+}
+
+async function findOpenTrackerTab() {
+  for (const appUrl of trackerAppUrls(EXTENSION_CONFIG)) {
+    const tabs = await chrome.tabs.query({ url: `${appUrl.replace(/\/$/, '')}/*` });
+    if (tabs.length) {
+      return { tabs, appUrl };
+    }
+  }
+
+  return { tabs: [], appUrl: null };
+}
 
 const status = document.querySelector('#status');
 const trackerStatus = document.querySelector('#tracker-status');
@@ -63,13 +80,13 @@ function providerName(provider) {
 
 async function getTrackerStatus(config) {
   const authState = (await chrome.storage.local.get('authState')).authState;
-  const appUrl = config.mode === 'production' ? config.productionAppUrl : config.developmentAppUrl;
-  const tabs = await chrome.tabs.query({ url: `${appUrl.replace(/\/$/, '')}/*` });
+  const { tabs, appUrl } = await findOpenTrackerTab();
 
-  if (!tabs.length) {
+  if (!tabs.length || !appUrl) {
+    const preferred = config.productionAppUrl ?? EXTENSION_CONFIG.productionAppUrl;
     return {
       state: 'warn',
-      text: `Tracker tab not open.\nOpen ${appUrl} and sign in.`,
+      text: `Tracker tab not open.\nOpen ${preferred} and sign in.`,
     };
   }
 
@@ -80,15 +97,22 @@ async function getTrackerStatus(config) {
     };
   }
 
+  const hosts = config.jellyfinHosts?.length
+    ? config.jellyfinHosts.join(', ')
+    : 'not synced yet';
+
   return {
     state: 'ok',
-    text: `Tracker linked${authState.user?.username ? ` as ${authState.user.username}` : ''}.`,
+    text: `Tracker linked${authState.user?.username ? ` as ${authState.user.username}` : ''}.\nJellyfin hosts: ${hosts}`,
   };
 }
 
 function statusState(data, provider) {
   if (!data) {
     return 'info';
+  }
+  if (data.phase === 'needs-permission') {
+    return 'warning';
   }
   if (data.error || data.phase === 'error' || data.timedOut) {
     return 'error';
@@ -125,6 +149,10 @@ function formatDebug(debug, liveStatus, provider) {
 
   if (data.timedOut) {
     return `Timed out talking to ${label}. Refresh the ${label} tab (F5), then try Connect again.`;
+  }
+
+  if (data.phase === 'needs-permission') {
+    return data.message;
   }
 
   if (data.phase === 'not-injected') {
@@ -177,42 +205,31 @@ function formatDebug(debug, liveStatus, provider) {
   return JSON.stringify(data, null, 2);
 }
 
-async function getConfig() {
-  await sendRuntimeMessage({ type: 'SYNC_PROFILE' });
-  await sendRuntimeMessage({ type: 'REQUEST_JELLYFIN_PERMISSIONS' });
-
+async function loadRuntimeConfig() {
+  const syncResult = await sendRuntimeMessage({ type: 'SYNC_PROFILE' });
   const response = await sendRuntimeMessage({ type: 'GET_CONFIG' });
   if (response.error) {
     throw new Error(response.error);
   }
+
   return {
     config: response.config ?? {},
-    jellyfinPermissions: response.jellyfinPermissions ?? null,
+    profileSync: syncResult,
   };
 }
 
 async function getActivePlayerTab(config) {
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  const tab = tabs[0];
-  const provider = detectProvider(tab?.url, config);
+  const windowTabs = await chrome.tabs.query({ currentWindow: true });
+  const activeTab = windowTabs.find((tab) => tab.active) ?? windowTabs[0];
 
-  return { tab, provider };
-}
-
-function jellyfinPermissionHint(config, permissionStatus) {
-  const hosts = config.jellyfinHosts?.length
-    ? config.jellyfinHosts.join(', ')
-    : 'localhost, 127.0.0.1, jellyfin';
-
-  if (!permissionStatus?.ok && permissionStatus?.missing?.length) {
-    return `Jellyfin host access was not granted for: ${permissionStatus.missing.join(', ')}\n\nAdd hosts in tracker Options, then click Connect and allow the permission prompt.\nConfigured hosts: ${hosts}`;
+  for (const tab of [activeTab, ...windowTabs.filter((tab) => tab.id !== activeTab?.id)]) {
+    const provider = detectProvider(tab?.url, config);
+    if (provider) {
+      return { tab, provider };
+    }
   }
 
-  if (!config.jellyfinHosts?.length) {
-    return `Jellyfin hosts not synced from your account yet.\nOpen the tracker Options page while signed in, then reopen this popup.\nUsing defaults: ${hosts}`;
-  }
-
-  return null;
+  return { tab: activeTab, provider: null };
 }
 
 async function ensureMonitor(tab, provider, config, permissionStatus) {
@@ -227,15 +244,12 @@ async function ensureMonitor(tab, provider, config, permissionStatus) {
   const isWatchPage =
     provider === 'netflix' ? tab.url.includes('/watch/') : isJellyfinTabUrl(tab.url, config);
 
-  if (provider === 'jellyfin') {
-    const permissionHint = jellyfinPermissionHint(config, permissionStatus);
-    if (permissionHint) {
-      return {
-        phase: 'error',
-        message: permissionHint,
-        provider,
-      };
-    }
+  if (provider === 'jellyfin' && !permissionStatus?.ok) {
+    return {
+      phase: 'needs-permission',
+      message: `Chrome blocked Jellyfin access.\n\nClick Connect again and choose Allow when Chrome asks to access:\n${permissionStatus?.missing?.[0] ?? 'your Jellyfin server'}`,
+      provider,
+    };
   }
 
   const existingStatus = await sendTabMessage(tab.id, { type: 'GET_STATUS' });
@@ -260,6 +274,14 @@ async function ensureMonitor(tab, provider, config, permissionStatus) {
           : ['lib/content-shared.js', 'content-netflix.js'],
     });
   } catch (error) {
+    if (provider === 'jellyfin') {
+      return {
+        phase: 'needs-permission',
+        message: `Could not inject into Jellyfin: ${String(error)}\n\nClick Connect again and allow site access when prompted.`,
+        provider,
+      };
+    }
+
     return {
       phase: 'error',
       message: `Could not inject into ${label}: ${String(error)}`,
@@ -297,49 +319,52 @@ async function ensureMonitor(tab, provider, config, permissionStatus) {
   );
 }
 
+async function renderPopupState({ requestPermissions = false } = {}) {
+  const { config, profileSync } = await loadRuntimeConfig();
+  const { tab, provider } = await getActivePlayerTab(config);
+  const tracker = await getTrackerStatus(config);
+
+  let jellyfinPermissions = null;
+  if (provider === 'jellyfin') {
+    jellyfinPermissions = requestPermissions
+      ? await requestJellyfinPermissions(config, tab?.url ?? null)
+      : await getJellyfinPermissionStatus(config, tab?.url ?? null);
+  }
+
+  trackerStatus.textContent =
+    !profileSync?.ok && profileSync?.reason === 'not-authenticated'
+      ? 'Profile not synced — open the tracker, sign in, and refresh that tab (F5).'
+      : tracker.text;
+  trackerStatus.dataset.state =
+    !profileSync?.ok && profileSync?.reason === 'not-authenticated' ? 'warn' : tracker.state;
+
+  let liveStatus = null;
+  if (provider) {
+    setProviderBadge(providerName(provider), provider);
+    injectButton.textContent = `Connect to ${providerName(provider)} tab`;
+    liveStatus = await ensureMonitor(tab, provider, config, jellyfinPermissions);
+  } else {
+    setProviderBadge('Netflix or Jellyfin', null, 'warning');
+    injectButton.textContent = 'Connect to player tab';
+    liveStatus = {
+      phase: 'not-injected',
+      message:
+        'Switch to a Netflix or Jellyfin tab first.\nThe popup checks tabs in the current window.',
+    };
+  }
+
+  const debugKey = provider === 'jellyfin' ? 'jellyfinDebug' : 'netflixDebug';
+  const stored = (await chrome.storage.local.get(debugKey))[debugKey];
+  status.textContent = formatDebug(stored, liveStatus, provider);
+  status.dataset.state = statusState(liveStatus ?? stored, provider);
+}
+
 async function refresh() {
   if (refreshInFlight) {
     return refreshInFlight;
   }
 
-  refreshInFlight = (async () => {
-    try {
-      const { config, jellyfinPermissions } = await getConfig();
-      const { tab, provider } = await getActivePlayerTab(config);
-      const tracker = await getTrackerStatus(config);
-      let liveStatus = null;
-
-      if (provider) {
-        setProviderBadge(providerName(provider), provider);
-        injectButton.textContent = `Connect to ${providerName(provider)} tab`;
-        liveStatus = await ensureMonitor(tab, provider, config, jellyfinPermissions);
-      } else {
-        setProviderBadge('Netflix or Jellyfin', null, 'warning');
-        injectButton.textContent = 'Connect to player tab';
-        liveStatus = {
-          phase: 'not-injected',
-          message:
-            'Switch to a Netflix or Jellyfin tab first.\nThe popup checks the currently active browser tab.',
-        };
-      }
-
-      const debugKey = provider === 'jellyfin' ? 'jellyfinDebug' : 'netflixDebug';
-      const stored = (await chrome.storage.local.get(debugKey))[debugKey];
-      const playerText = formatDebug(stored, liveStatus, provider);
-
-      status.textContent = playerText;
-      status.dataset.state = statusState(liveStatus ?? stored, provider);
-
-      trackerStatus.textContent = tracker.text;
-      trackerStatus.dataset.state = tracker.state;
-    } catch (error) {
-      setProviderBadge('Unavailable', null, 'error');
-      status.textContent = `${String(error)}\n\nReload the extension at chrome://extensions, then try again.`;
-      status.dataset.state = 'error';
-      trackerStatus.textContent = 'Tracker link unknown until the extension background is running.';
-      trackerStatus.dataset.state = 'warn';
-    }
-  })();
+  refreshInFlight = renderPopupState({ requestPermissions: false });
 
   try {
     await refreshInFlight;
@@ -348,17 +373,47 @@ async function refresh() {
   }
 }
 
-injectButton.addEventListener('click', async () => {
+async function connectToPlayer() {
   injectButton.disabled = true;
   const originalText = injectButton.textContent;
   injectButton.textContent = 'Connecting…';
+  status.textContent = 'Requesting Jellyfin site access…';
+  status.dataset.state = 'info';
 
   try {
-    await refresh();
+    const windowTabs = await chrome.tabs.query({ currentWindow: true });
+    const activeTab = windowTabs.find((tab) => tab.active) ?? windowTabs[0];
+
+    if (activeTab?.url) {
+      try {
+        const pattern = `${new URL(activeTab.url).origin}/*`;
+        const allowed = await chrome.permissions.contains({ origins: [pattern] });
+        if (!allowed) {
+          status.textContent = `Allow Chrome to access:\n${pattern}`;
+          const granted = await chrome.permissions.request({ origins: [pattern] });
+          if (!granted) {
+            await chrome.permissions.request({ origins: ['http://*/*'] });
+          }
+        }
+      } catch (error) {
+        console.warn('[Arrowverse] permission request failed:', error);
+      }
+    }
+
+    void sendRuntimeMessage({ type: 'JELLYFIN_PERMISSIONS_GRANTED' });
+    await renderPopupState({ requestPermissions: true });
+  } catch (error) {
+    setProviderBadge('Unavailable', null, 'error');
+    status.textContent = `${String(error)}\n\nReload the extension at chrome://extensions, then try again.`;
+    status.dataset.state = 'error';
   } finally {
     injectButton.disabled = false;
     injectButton.textContent = originalText;
   }
+}
+
+injectButton.addEventListener('click', () => {
+  void connectToPlayer();
 });
 
 document.querySelector('#open-options').addEventListener('click', () => {

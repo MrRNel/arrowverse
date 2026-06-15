@@ -1,10 +1,9 @@
 export const EXTENSION_CONFIG = {
-  mode: 'development',
+  mode: 'production',
   developmentAppUrl: 'http://localhost:4200',
   productionAppUrl: 'https://arrowverse.forgenetics.co.za',
   developmentApiUrl: 'http://localhost:4200/api',
   productionApiUrl: 'https://arrowverse.forgenetics.co.za/api',
-  jellyfinServerUrl: 'http://localhost:8096',
   extensionClientId: 'arrowverse-extension',
 };
 

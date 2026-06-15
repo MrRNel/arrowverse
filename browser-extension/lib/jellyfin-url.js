@@ -73,24 +73,57 @@ export function tabMatchesJellyfinHost(url, config) {
     const tab = new URL(url);
     const hosts = getJellyfinHosts(config);
     const expectedPort = getJellyfinPort(config);
+    const hostname = tab.hostname.toLowerCase();
 
-    if (!hosts.includes(tab.hostname.toLowerCase())) {
-      return getJellyfinMatchOrigins(config).includes(tab.origin);
+    if (hosts.includes(hostname) && tabPort(tab) === expectedPort) {
+      return true;
     }
 
-    return tabPort(tab) === expectedPort;
+    return getJellyfinMatchOrigins(config).includes(tab.origin);
   } catch {
     return false;
   }
 }
 
+export function isJellyfinWebPath(url) {
+  if (!url) {
+    return false;
+  }
+
+  try {
+    const tab = new URL(url);
+    return (
+      tab.pathname.startsWith('/web') ||
+      tab.hash.includes('/web') ||
+      /\/video/i.test(`${tab.pathname}${tab.hash}`)
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function getJellyfinSchemes(config) {
+  const configured = config?.jellyfinServerUrl?.trim();
+  if (configured) {
+    try {
+      return [new URL(configured).protocol.replace(':', '')];
+    } catch {
+      // Fall through to HTTP.
+    }
+  }
+
+  return ['http'];
+}
+
 export function getJellyfinMatchOrigins(config) {
   const port = getJellyfinPort(config);
+  const schemes = getJellyfinSchemes(config);
   const origins = new Set();
 
   for (const host of getJellyfinHosts(config)) {
-    origins.add(`http://${host}:${port}`);
-    origins.add(`https://${host}:${port}`);
+    for (const scheme of schemes) {
+      origins.add(`${scheme}://${host}:${port}`);
+    }
   }
 
   const configured = config?.jellyfinServerUrl?.trim();
@@ -105,8 +138,24 @@ export function getJellyfinMatchOrigins(config) {
   return [...origins];
 }
 
-export function getJellyfinMatchPatterns(config) {
-  return getJellyfinMatchOrigins(config).map((origin) => `${origin}/*`);
+export function getJellyfinMatchPatterns(config, options = {}) {
+  const { tabUrl = null } = options;
+  const patterns = getJellyfinMatchOrigins(config).map((origin) => `${origin}/*`);
+
+  if (!tabUrl) {
+    return patterns;
+  }
+
+  try {
+    const preferred = `${new URL(tabUrl).origin}/*`;
+    if (!patterns.includes(preferred)) {
+      return patterns;
+    }
+
+    return [preferred, ...patterns.filter((pattern) => pattern !== preferred)];
+  } catch {
+    return patterns;
+  }
 }
 
 export function getJellyfinOrigin(config) {
@@ -127,18 +176,5 @@ export function isJellyfinTabUrl(url, config) {
     return false;
   }
 
-  try {
-    const tab = new URL(url);
-    if (!tabMatchesJellyfinHost(url, config)) {
-      return false;
-    }
-
-    return (
-      tab.pathname.startsWith('/web') ||
-      tab.hash.includes('/web') ||
-      /\/video/i.test(`${tab.pathname}${tab.hash}`)
-    );
-  } catch {
-    return false;
-  }
+  return tabMatchesJellyfinHost(url, config) && isJellyfinWebPath(url);
 }

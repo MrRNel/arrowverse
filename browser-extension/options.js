@@ -1,3 +1,5 @@
+import { EXTENSION_CONFIG } from './lib/config.js';
+
 const modeInput = document.querySelector('#mode');
 const developmentInput = document.querySelector('#developmentAppUrl');
 const productionInput = document.querySelector('#productionAppUrl');
@@ -11,9 +13,9 @@ async function load() {
     'productionAppUrl',
   ]);
 
-  modeInput.value = stored.mode ?? 'development';
-  developmentInput.value = stored.developmentAppUrl ?? 'http://localhost:4200';
-  productionInput.value = stored.productionAppUrl ?? 'https://arrowverse.example.com';
+  modeInput.value = stored.mode ?? EXTENSION_CONFIG.mode ?? 'production';
+  developmentInput.value = stored.developmentAppUrl ?? EXTENSION_CONFIG.developmentAppUrl;
+  productionInput.value = stored.productionAppUrl ?? EXTENSION_CONFIG.productionAppUrl;
 }
 
 form.addEventListener('submit', async (event) => {

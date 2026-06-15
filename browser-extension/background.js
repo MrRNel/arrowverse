@@ -1,6 +1,12 @@
 import { EXTENSION_CONFIG, getAppUrl, isAppUrl } from './lib/config.js';
 import { getJellyfinMatchPatterns, isJellyfinTabUrl } from './lib/jellyfin-url.js';
 import {
+  applyProfileToConfig,
+  isLocalJellyfinOrigin,
+  jellyfinOriginFromProfileUrl,
+  normalizeProfileSettings,
+} from './lib/profile-settings.js';
+import {
   fetchUserSettings,
   markEpisodeOnApi,
   saveAuthState,
@@ -85,82 +91,141 @@ async function ensureMatcher() {
 }
 
 async function loadConfig() {
-  const stored = await chrome.storage.sync.get([
-    'mode',
-    'developmentAppUrl',
-    'productionAppUrl',
-    'jellyfinServerUrl',
-    'jellyfinHosts',
+  const [stored, local] = await Promise.all([
+    chrome.storage.sync.get([
+      'mode',
+      'developmentAppUrl',
+      'productionAppUrl',
+      'jellyfinServerUrl',
+      'jellyfinHosts',
+    ]),
+    chrome.storage.local.get('profileSettings'),
   ]);
-  config = {
-    ...EXTENSION_CONFIG,
-    ...stored,
-  };
+
+  config = applyProfileToConfig(
+    {
+      ...EXTENSION_CONFIG,
+      ...stored,
+    },
+    local.profileSettings,
+  );
+
+  if (stored.jellyfinHosts?.length && !local.profileSettings?.jellyfin_hosts?.length) {
+    config.jellyfinHosts = stored.jellyfinHosts;
+  }
+
+  if (
+    stored.jellyfinServerUrl &&
+    !local.profileSettings?.jellyfin_url &&
+    !(config.mode === 'production' && isLocalJellyfinOrigin(stored.jellyfinServerUrl))
+  ) {
+    config.jellyfinServerUrl = stored.jellyfinServerUrl;
+  }
+
   return config;
 }
 
-function jellyfinOriginFromProfileUrl(jellyfinUrl) {
-  if (!jellyfinUrl || typeof jellyfinUrl !== 'string') {
-    return null;
+async function resolveModeFromOpenTrackerTabs() {
+  await loadConfig();
+
+  const candidates = [
+    { mode: 'production', url: config.productionAppUrl },
+    { mode: 'development', url: config.developmentAppUrl },
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate.url) {
+      continue;
+    }
+
+    const pattern = `${candidate.url.replace(/\/$/, '')}/*`;
+    const tabs = await chrome.tabs.query({ url: pattern });
+    if (!tabs.length) {
+      continue;
+    }
+
+    if (config.mode !== candidate.mode) {
+      await chrome.storage.sync.set({ mode: candidate.mode });
+      config = { ...config, mode: candidate.mode };
+    }
+
+    return candidate.mode;
   }
 
-  try {
-    return new URL(jellyfinUrl.trim()).origin;
-  } catch {
-    return null;
-  }
+  return config.mode;
 }
 
 async function applyUserSettings(data) {
-  const updates = {};
-
-  const hosts = Array.isArray(data?.jellyfin_hosts)
-    ? data.jellyfin_hosts.filter((entry) => typeof entry === 'string')
-    : [];
-  if (hosts.length) {
-    updates.jellyfinHosts = hosts;
+  const profile = normalizeProfileSettings(data);
+  if (!profile) {
+    return false;
   }
 
-  const origin = jellyfinOriginFromProfileUrl(data?.jellyfin_url);
+  const updates = {};
+  if (profile.jellyfin_hosts.length) {
+    updates.jellyfinHosts = profile.jellyfin_hosts;
+  }
+
+  const origin = jellyfinOriginFromProfileUrl(profile.jellyfin_url);
   if (origin) {
     updates.jellyfinServerUrl = origin;
   }
 
-  if (!Object.keys(updates).length) {
-    return false;
+  await chrome.storage.local.set({ profileSettings: profile });
+
+  if (Object.keys(updates).length) {
+    await chrome.storage.sync.set(updates);
   }
 
-  await chrome.storage.sync.set(updates);
-  config = {
-    ...config,
-    ...updates,
-  };
+  config = applyProfileToConfig(
+    {
+      ...config,
+      ...updates,
+    },
+    profile,
+  );
   scheduleDynamicContentScripts();
   return true;
 }
 
 async function clearProfileSettings() {
-  await chrome.storage.sync.remove(['jellyfinHosts', 'jellyfinServerUrl']);
-  config = {
-    ...config,
-    jellyfinHosts: undefined,
-    jellyfinServerUrl: EXTENSION_CONFIG.jellyfinServerUrl,
-  };
+  await Promise.all([
+    chrome.storage.sync.remove(['jellyfinHosts', 'jellyfinServerUrl']),
+    chrome.storage.local.remove('profileSettings'),
+  ]);
+  config = applyProfileToConfig(
+    {
+      ...config,
+      jellyfinHosts: undefined,
+      jellyfinServerUrl: undefined,
+    },
+    null,
+  );
   scheduleDynamicContentScripts();
 }
 
 async function syncProfileSettings() {
-  const activeConfig = await loadConfig();
-  const result = await fetchUserSettings(activeConfig);
+  await resolveModeFromOpenTrackerTabs();
+  await loadConfig();
+  const result = await fetchUserSettings(config);
   if (!result.ok) {
     return result;
   }
 
   await applyUserSettings(result.settings);
-  return { ok: true };
+  return { ok: true, settings: result.settings };
+}
+
+async function migrateStaleProductionConfig() {
+  const stored = await chrome.storage.sync.get(['mode', 'jellyfinServerUrl']);
+  if (stored.mode === 'production' && isLocalJellyfinOrigin(stored.jellyfinServerUrl)) {
+    await chrome.storage.sync.remove('jellyfinServerUrl');
+  }
 }
 
 async function bootstrapExtension() {
+  await migrateStaleProductionConfig();
+  await resolveModeFromOpenTrackerTabs();
   await loadConfig();
   await ensureMatcher();
   const syncResult = await syncProfileSettings();
@@ -392,13 +457,13 @@ async function syncModeFromTrackerUrl(url) {
   }
 }
 
-async function ensureJellyfinPermissions(requestFromUser = false) {
+async function ensureJellyfinPermissions(requestFromUser = false, tabUrl = null) {
   const activeConfig = await loadConfig();
-  const patterns = getJellyfinMatchPatterns(activeConfig);
+  const patterns = getJellyfinMatchPatterns(activeConfig, { tabUrl });
 
   const hasBroadHttp = await chrome.permissions.contains({ origins: ['http://*/*'] });
   if (hasBroadHttp) {
-    return { ok: true, patterns, granted: patterns };
+    return { ok: true, patterns, granted: patterns, missing: [] };
   }
 
   const missing = [];
@@ -410,34 +475,66 @@ async function ensureJellyfinPermissions(requestFromUser = false) {
   }
 
   if (!missing.length) {
-    return { ok: true, patterns, granted: patterns };
+    return { ok: true, patterns, granted: patterns, missing: [] };
   }
 
   if (!requestFromUser) {
-    return { ok: false, patterns, missing, granted: patterns.filter((pattern) => !missing.includes(pattern)) };
+    return {
+      ok: false,
+      patterns,
+      missing,
+      granted: patterns.filter((pattern) => !missing.includes(pattern)),
+    };
   }
 
-  let granted = false;
-  try {
-    granted = await chrome.permissions.request({ origins: missing });
-  } catch {
-    granted = false;
-  }
+  const requestBatch = async (origins) => {
+    if (!origins.length) {
+      return false;
+    }
 
-  if (!granted) {
     try {
-      granted = await chrome.permissions.request({ origins: ['http://*/*'] });
+      return await chrome.permissions.request({ origins });
     } catch {
-      granted = false;
+      return false;
+    }
+  };
+
+  if (tabUrl) {
+    try {
+      const preferred = `${new URL(tabUrl).origin}/*`;
+      if (missing.includes(preferred) && (await requestBatch([preferred]))) {
+        scheduleDynamicContentScripts();
+        return ensureJellyfinPermissions(false, tabUrl);
+      }
+    } catch {
+      // Ignore invalid tab URL.
     }
   }
 
-  if (granted) {
+  if (await requestBatch(missing)) {
     scheduleDynamicContentScripts();
-    return { ok: true, patterns, granted: patterns };
+    return { ok: true, patterns, granted: patterns, missing: [] };
   }
 
-  return { ok: false, patterns, missing, granted: [] };
+  if (await requestBatch(['http://*/*'])) {
+    scheduleDynamicContentScripts();
+    return { ok: true, patterns, granted: patterns, missing: [], broad: true };
+  }
+
+  const stillMissing = [];
+  for (const pattern of patterns) {
+    const allowed = await chrome.permissions.contains({ origins: [pattern] });
+    if (!allowed) {
+      stillMissing.push(pattern);
+    }
+  }
+
+  return {
+    ok: stillMissing.length === 0,
+    patterns,
+    missing: stillMissing,
+    granted: patterns.filter((pattern) => !stillMissing.includes(pattern)),
+  };
 }
 
 async function ensureJellyfinPermission(origin) {
@@ -592,6 +689,8 @@ async function handleMessage(message, sender) {
   }
 
   if (message.type === 'GET_CONFIG') {
+    await resolveModeFromOpenTrackerTabs();
+    await loadConfig();
     const permissionStatus = await ensureJellyfinPermissions(false);
     return {
       config,
@@ -601,11 +700,17 @@ async function handleMessage(message, sender) {
 
   if (message.type === 'SYNC_PROFILE') {
     const syncResult = await syncProfileSettings();
-    return syncResult;
+    await loadConfig();
+    return { ...syncResult, config };
   }
 
   if (message.type === 'REQUEST_JELLYFIN_PERMISSIONS') {
-    return ensureJellyfinPermissions(true);
+    return ensureJellyfinPermissions(true, message.tabUrl ?? null);
+  }
+
+  if (message.type === 'JELLYFIN_PERMISSIONS_GRANTED') {
+    scheduleDynamicContentScripts();
+    return { ok: true };
   }
 
   if (message.type === 'PLAYER_ENSURE_MONITOR' && sender.tab?.id) {
@@ -729,8 +834,18 @@ async function handleMessage(message, sender) {
   }
 
   if (message.type === 'SAVE_CONFIG') {
-    await chrome.storage.sync.set(message.config);
-    config = { ...config, ...message.config };
+    const nextConfig = { ...message.config };
+    delete nextConfig.jellyfinServerUrl;
+    delete nextConfig.jellyfinHosts;
+
+    await chrome.storage.sync.set(nextConfig);
+    config = applyProfileToConfig(
+      {
+        ...config,
+        ...nextConfig,
+      },
+      (await chrome.storage.local.get('profileSettings')).profileSettings,
+    );
     await registerDynamicContentScripts();
 
     const patterns = await getAppBridgePatterns();

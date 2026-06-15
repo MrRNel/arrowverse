@@ -40,12 +40,11 @@ copyFileSync(
 writeFileSync(
   join(extensionRoot, 'lib/config.js'),
   `export const EXTENSION_CONFIG = {
-  mode: 'development',
+  mode: 'production',
   developmentAppUrl: '${developmentAppUrl}',
   productionAppUrl: '${productionAppUrl}',
   developmentApiUrl: '${developmentApiUrl}',
   productionApiUrl: '${productionApiUrl}',
-  jellyfinServerUrl: 'http://localhost:8096',
   extensionClientId: 'arrowverse-extension',
 };
 
