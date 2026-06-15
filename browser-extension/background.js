@@ -1,5 +1,5 @@
 import { EXTENSION_CONFIG, getAppUrl, isAppUrl } from './lib/config.js';
-import { getJellyfinMatchPatterns, getJellyfinOrigin } from './lib/jellyfin-url.js';
+import { getJellyfinMatchPatterns, isJellyfinTabUrl } from './lib/jellyfin-url.js';
 import {
   fetchUserSettings,
   markEpisodeOnApi,
@@ -29,6 +29,11 @@ async function hasHostPermissionForUrl(url) {
   }
 
   try {
+    const hasBroadHttp = await chrome.permissions.contains({ origins: ['http://*/*'] });
+    if (hasBroadHttp) {
+      return true;
+    }
+
     return chrome.permissions.contains({ origins: [toOriginPattern(url)] });
   } catch {
     return false;
@@ -208,6 +213,7 @@ async function registerAppBridgeContentScript() {
 
 async function ensureAppBridgeTab(tabId, url) {
   const activeConfig = await loadConfig();
+  await syncModeFromTrackerUrl(url);
   if (!isInjectableUrl(url) || !isAppUrl(url, activeConfig)) {
     return;
   }
@@ -363,21 +369,118 @@ async function showOutOfSyncWarning(warning) {
   }
 }
 
+async function syncModeFromTrackerUrl(url) {
+  if (!isInjectableUrl(url) || !isAppUrl(url, config)) {
+    return;
+  }
+
+  const origin = new URL(url).origin;
+  const devOrigin = new URL(config.developmentAppUrl).origin;
+  const prodOrigin = new URL(config.productionAppUrl).origin;
+
+  let mode = config.mode;
+  if (origin === prodOrigin) {
+    mode = 'production';
+  } else if (origin === devOrigin) {
+    mode = 'development';
+  }
+
+  if (mode !== config.mode) {
+    await chrome.storage.sync.set({ mode });
+    config = { ...config, mode };
+    void syncProfileSettings();
+  }
+}
+
+async function ensureJellyfinPermissions(requestFromUser = false) {
+  const activeConfig = await loadConfig();
+  const patterns = getJellyfinMatchPatterns(activeConfig);
+
+  const hasBroadHttp = await chrome.permissions.contains({ origins: ['http://*/*'] });
+  if (hasBroadHttp) {
+    return { ok: true, patterns, granted: patterns };
+  }
+
+  const missing = [];
+  for (const pattern of patterns) {
+    const allowed = await chrome.permissions.contains({ origins: [pattern] });
+    if (!allowed) {
+      missing.push(pattern);
+    }
+  }
+
+  if (!missing.length) {
+    return { ok: true, patterns, granted: patterns };
+  }
+
+  if (!requestFromUser) {
+    return { ok: false, patterns, missing, granted: patterns.filter((pattern) => !missing.includes(pattern)) };
+  }
+
+  let granted = false;
+  try {
+    granted = await chrome.permissions.request({ origins: missing });
+  } catch {
+    granted = false;
+  }
+
+  if (!granted) {
+    try {
+      granted = await chrome.permissions.request({ origins: ['http://*/*'] });
+    } catch {
+      granted = false;
+    }
+  }
+
+  if (granted) {
+    scheduleDynamicContentScripts();
+    return { ok: true, patterns, granted: patterns };
+  }
+
+  return { ok: false, patterns, missing, granted: [] };
+}
+
 async function ensureJellyfinPermission(origin) {
   if (!origin) {
     return false;
   }
 
   const pattern = `${origin}/*`;
+  const hasBroadHttp = await chrome.permissions.contains({ origins: ['http://*/*'] });
+  if (hasBroadHttp) {
+    return true;
+  }
+
   const hasPermission = await chrome.permissions.contains({ origins: [pattern] });
   if (hasPermission) {
     return true;
   }
 
+  return false;
+}
+
+async function ensureJellyfinTab(tabId, url) {
+  const activeConfig = await loadConfig();
+  if (!isInjectableUrl(url) || !isJellyfinTabUrl(url, activeConfig)) {
+    return;
+  }
+
+  if (!(await hasHostPermissionForUrl(url))) {
+    console.warn('[Arrowverse] Missing host permission for Jellyfin tab:', url);
+    return;
+  }
+
   try {
-    return await chrome.permissions.request({ origins: [pattern] });
+    await chrome.tabs.sendMessage(tabId, { type: 'GET_STATUS' });
+    return;
   } catch {
-    return false;
+    // Monitor not attached yet.
+  }
+
+  try {
+    await injectPlayerMonitor(tabId, 'jellyfin');
+  } catch (error) {
+    console.warn('[Arrowverse] Could not inject Jellyfin monitor:', error);
   }
 }
 
@@ -435,6 +538,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
     void ensureAppBridgeTab(tabId, tab.url);
+    void ensureJellyfinTab(tabId, tab.url);
   }
 });
 
@@ -488,7 +592,20 @@ async function handleMessage(message, sender) {
   }
 
   if (message.type === 'GET_CONFIG') {
-    return { config };
+    const permissionStatus = await ensureJellyfinPermissions(false);
+    return {
+      config,
+      jellyfinPermissions: permissionStatus,
+    };
+  }
+
+  if (message.type === 'SYNC_PROFILE') {
+    const syncResult = await syncProfileSettings();
+    return syncResult;
+  }
+
+  if (message.type === 'REQUEST_JELLYFIN_PERMISSIONS') {
+    return ensureJellyfinPermissions(true);
   }
 
   if (message.type === 'PLAYER_ENSURE_MONITOR' && sender.tab?.id) {
@@ -590,7 +707,11 @@ async function handleMessage(message, sender) {
   }
 
   if (message.type === 'APP_READY' && sender.tab?.id) {
-    void syncProfileSettings();
+    await loadConfig();
+    if (sender.tab.url) {
+      await syncModeFromTrackerUrl(sender.tab.url);
+    }
+    await syncProfileSettings();
 
     const pending = (await chrome.storage.local.get('pendingEvents')).pendingEvents ?? [];
     if (!pending.length) {

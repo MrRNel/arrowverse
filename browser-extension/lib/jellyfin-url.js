@@ -56,9 +56,42 @@ export function getJellyfinPort(config) {
   }
 }
 
+function tabPort(url) {
+  if (url.port) {
+    return url.port;
+  }
+
+  return url.protocol === 'https:' ? '443' : '80';
+}
+
+export function tabMatchesJellyfinHost(url, config) {
+  if (!url) {
+    return false;
+  }
+
+  try {
+    const tab = new URL(url);
+    const hosts = getJellyfinHosts(config);
+    const expectedPort = getJellyfinPort(config);
+
+    if (!hosts.includes(tab.hostname.toLowerCase())) {
+      return getJellyfinMatchOrigins(config).includes(tab.origin);
+    }
+
+    return tabPort(tab) === expectedPort;
+  } catch {
+    return false;
+  }
+}
+
 export function getJellyfinMatchOrigins(config) {
   const port = getJellyfinPort(config);
-  const origins = new Set(getJellyfinHosts(config).map((host) => `http://${host}:${port}`));
+  const origins = new Set();
+
+  for (const host of getJellyfinHosts(config)) {
+    origins.add(`http://${host}:${port}`);
+    origins.add(`https://${host}:${port}`);
+  }
 
   const configured = config?.jellyfinServerUrl?.trim();
   if (configured) {
@@ -96,7 +129,7 @@ export function isJellyfinTabUrl(url, config) {
 
   try {
     const tab = new URL(url);
-    if (!getJellyfinMatchOrigins(config).includes(tab.origin)) {
+    if (!tabMatchesJellyfinHost(url, config)) {
       return false;
     }
 

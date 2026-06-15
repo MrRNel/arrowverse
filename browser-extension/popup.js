@@ -178,11 +178,17 @@ function formatDebug(debug, liveStatus, provider) {
 }
 
 async function getConfig() {
+  await sendRuntimeMessage({ type: 'SYNC_PROFILE' });
+  await sendRuntimeMessage({ type: 'REQUEST_JELLYFIN_PERMISSIONS' });
+
   const response = await sendRuntimeMessage({ type: 'GET_CONFIG' });
   if (response.error) {
     throw new Error(response.error);
   }
-  return response.config ?? {};
+  return {
+    config: response.config ?? {},
+    jellyfinPermissions: response.jellyfinPermissions ?? null,
+  };
 }
 
 async function getActivePlayerTab(config) {
@@ -193,7 +199,23 @@ async function getActivePlayerTab(config) {
   return { tab, provider };
 }
 
-async function ensureMonitor(tab, provider, config) {
+function jellyfinPermissionHint(config, permissionStatus) {
+  const hosts = config.jellyfinHosts?.length
+    ? config.jellyfinHosts.join(', ')
+    : 'localhost, 127.0.0.1, jellyfin';
+
+  if (!permissionStatus?.ok && permissionStatus?.missing?.length) {
+    return `Jellyfin host access was not granted for: ${permissionStatus.missing.join(', ')}\n\nAdd hosts in tracker Options, then click Connect and allow the permission prompt.\nConfigured hosts: ${hosts}`;
+  }
+
+  if (!config.jellyfinHosts?.length) {
+    return `Jellyfin hosts not synced from your account yet.\nOpen the tracker Options page while signed in, then reopen this popup.\nUsing defaults: ${hosts}`;
+  }
+
+  return null;
+}
+
+async function ensureMonitor(tab, provider, config, permissionStatus) {
   if (!tab?.id || !provider) {
     return {
       phase: 'not-injected',
@@ -204,6 +226,17 @@ async function ensureMonitor(tab, provider, config) {
   const label = providerName(provider);
   const isWatchPage =
     provider === 'netflix' ? tab.url.includes('/watch/') : isJellyfinTabUrl(tab.url, config);
+
+  if (provider === 'jellyfin') {
+    const permissionHint = jellyfinPermissionHint(config, permissionStatus);
+    if (permissionHint) {
+      return {
+        phase: 'error',
+        message: permissionHint,
+        provider,
+      };
+    }
+  }
 
   const existingStatus = await sendTabMessage(tab.id, { type: 'GET_STATUS' });
   if (existingStatus && !existingStatus.error && !existingStatus.timedOut) {
@@ -223,7 +256,7 @@ async function ensureMonitor(tab, provider, config) {
       target: { tabId: tab.id },
       files:
         provider === 'jellyfin'
-          ? ['lib/content-shared.js', 'lib/jellyfin-client.js', 'content-jellyfin.js']
+          ? ['lib/content-shared.js', 'lib/uuid.js', 'lib/jellyfin-client.js', 'content-jellyfin.js']
           : ['lib/content-shared.js', 'content-netflix.js'],
     });
   } catch (error) {
@@ -271,7 +304,7 @@ async function refresh() {
 
   refreshInFlight = (async () => {
     try {
-      const config = await getConfig();
+      const { config, jellyfinPermissions } = await getConfig();
       const { tab, provider } = await getActivePlayerTab(config);
       const tracker = await getTrackerStatus(config);
       let liveStatus = null;
@@ -279,7 +312,7 @@ async function refresh() {
       if (provider) {
         setProviderBadge(providerName(provider), provider);
         injectButton.textContent = `Connect to ${providerName(provider)} tab`;
-        liveStatus = await ensureMonitor(tab, provider, config);
+        liveStatus = await ensureMonitor(tab, provider, config, jellyfinPermissions);
       } else {
         setProviderBadge('Netflix or Jellyfin', null, 'warning');
         injectButton.textContent = 'Connect to player tab';
